@@ -20,13 +20,24 @@ export default {
         { x: 6, y: 15 },
         { x: 7, y: 13 },
         { x: 8, y: 12 },
-        { x: 9, y: 5 }
+        { x: 9, y: 5 },
+        { x: 10, y: 13 },
+        { x: 11, y: 15 },
+        { x: 12, y: 28 },
+        { x: 13, y: 30 },
+        { x: 15, y: 17 }
       ],
       options: {
         rules: true,
         axis: true,
         labels: true,
         padding: 0.3,
+        line: true,
+        points: true,
+        curve: {
+          type: 'Step'
+        },
+        value: false,
         getX: (d) => {
           return d.x
         },

@@ -1,14 +1,10 @@
 {
   "name": "vue-d3-barchart",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Vue component to draw bar charts using d3 ",
   "main": "dist/vue-d3-barchart.js",
   "scripts": {
-<<<<<<< HEAD
     "build": "vue build src/vue-d3-barchart.vue --prod --lib vueD3Barchart",
-=======
-    "build": "vue build src/vue-d3-barchart.vue --prod --lib vueD3Network",
->>>>>>> 1bf164f... Initial commit
     "example": "vue build src/example/example.vue --dist example --prod -c config.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --ext .js,.vue src",
@@ -55,6 +51,8 @@
   },
   "dependencies": {
     "d3-array": "^1.2.0",
-    "d3-scale": "^1.0.6"
+    "d3-line": "0.0.1",
+    "d3-scale": "^1.0.6",
+    "d3-shape": "^1.2.0"
   }
 }

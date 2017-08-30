@@ -1,12 +1,12 @@
 <template lang="pug">
   .d3-bar-chart(@mousemove.prevent="moveLine")
     svg(v-if='bars.length' :width="w" :height="h")
-      g(v-for="d,i in bars" class="bars")
-        //- Bars
+      //- Bars
+      g(v-if='bars' v-for="d,i in bars" class="bars")
         //- visible bar  
-        rect(:width="d.w" :height="d.y" :x="barX(d)" :y='barY(d)' :style='barStyle(d)' class="bar" @click='barClick($event,d)')
+        rect(:width="d.w" :height="d.y" :x='barX(d)' :y='barY(d)' :style='barStyle(d)' class="bar" @click='barClick($event,d)')
         //- dummy bar to capture mouse events
-        rect( :width="d.w" :height="h" :x="barX(d)" y='0' class="dummy-bar"
+        rect( v-if='opts.value || opts.line' :width="d.w" :height="h" :x="barX(d)" y='0' class="dummy-bar"
           @mouseover.prevent='startMove($event,d)'
           @mouseleave='stopMove($event,d)' 
           @click='barClick($event,d)'
@@ -19,6 +19,12 @@
         g(v-if='opts.labels' class="labels")
           text(:font-size="fontSizeFixed" class="bar-text x-axis" :x="txtX(d)" :y="h") {{d.yv}}
           text(:font-size="fontSizeFixed" class="bar-text y-axis" x="0" :y="h - d.y") {{d.xv}}
+      //- Curve
+      g(v-if='opts.curve' class="curve")
+        path(:d='curve')
+      //-Curve point
+      g(v-if='opts.points' class="points")
+        circle(v-for="d,i in bars" :r='pointRadius' :cx='barX(d) + barW /2' :cy='barY(d)' :style='pointStyle(d)' class="point")
       //- Axis
       g(v-if='opts.axis' class="axis")
        line(x1='0' :x2='w' :y1='h-2' :y2='h-2' class="x-axis")
@@ -26,13 +32,16 @@
       //- Line
       g(v-if="opts.line" v-show='over' class="chart-line")
         line(:x1='lineX' :x2='lineX' :y1='0' :y2='h - margin' class="line" )
+      //- Value  
+      g(v-if="opts.value" v-show='over' class="chart-line")
         text(:font-size='fontSizeFixed' :x='lineX + fontSizeFixed' :y='fontSizeFixed' class="label") {{over.xv + " "+ opts.yUnits}}
         
 </template>
 <script>
 import * as d3array from 'd3-array'
 import * as d3scale from 'd3-scale'
-const d3 = Object.assign({}, d3array, d3scale)
+import * as d3Shape from 'd3-shape'
+const d3 = Object.assign({}, d3array, d3scale, d3Shape)
 const defaultOptions = {
   labels: false, // render labels
   axis: false, // render axis
@@ -46,6 +55,15 @@ const defaultOptions = {
   xUnits: '', // x  suffix
   yUnits: '', //  y suffix
   domain: { min: null, max: null }, // graph domain, nulls are evaluated as default
+  points: {
+    radius: 0,
+    style: null
+  },
+  curve: {
+    type: 'curve'
+  },
+  bars: true,
+  value: true,
   autoSize: {
     w: 180,
     h: 60
@@ -122,14 +140,12 @@ export default {
     bars () {
       let h = this.h - this.margin
       let w = this.w - this.margin
-      let data = this.data.map((d) => {
-        return this.getY(d)
-      })
+      let data = this.mappedData
 
       // Domain
       let dom = this.opts.domain
-      let max = (dom.max === null) ? d3.max(data) : dom.max
-      let min = (dom.min === null) ? d3.min(data) : dom.min
+      let min = this.min
+      let max = this.max
 
       let scaleX = d3.scaleBand()
         .domain(d3.range(data.length))
@@ -165,6 +181,61 @@ export default {
           w: scaleX.bandwidth()
         }
       })
+    },
+    curve () {
+      if (this.opts.curve) {
+        let data = this.mappedData
+        let margin = this.margin
+        let barw = this.barW / 2
+        let h = this.h - margin / 2
+        let w = this.w - barw
+
+        let x = d3.scaleLinear()
+          .rangeRound([barw + margin, w])
+
+        let y = d3.scaleLinear()
+          .rangeRound([h, 0])
+        let curve = d3.line()
+          .x((d, i) => {
+            return x(i)
+          })
+          .y((d) => {
+            return y(d)
+          })
+
+        // curve type
+        if (this.opts.curve.type) {
+          curve.curve(this.curveType(this.opts.curve.type))
+        }
+
+        x.domain(d3.extent(data, (d, i) => { return i }))
+        y.domain(d3.extent(data, (d) => { return d }))
+
+        return curve(data)
+      }
+      return
+    },
+    pointRadius () {
+      return this.opts.curve.pointRadius || (this.barW / 10)
+    },
+    barW () {
+      return this.bars[0].w || 0
+    },
+    min () {
+      let dom = this.opts.domain
+      let data = this.mappedData
+      return (dom.min === null) ? d3.min(data) : dom.min
+    },
+    max () {
+      let dom = this.opts.domain
+      let data = this.mappedData
+      return (dom.max === null) ? d3.max(data) : dom.max
+    },
+    mappedData () {
+      let data = this.data.map((d) => {
+        return this.getY(d)
+      })
+      return data
     },
     fontSize () {
       let maxChars = d3.max(this.data.map((d) => {
@@ -210,6 +281,21 @@ export default {
     },
     barStyle (d) {
       return (this.opts.colors) ? 'fill: ' + d.color : ''
+    },
+    pointStyle (d) {
+      return this.opts.points.style || this.barStyle(d)
+    },
+    curveType (type) {
+      if (type) {
+        if (typeof (type) === 'function') return type
+        // ex Linear
+        let func = d3['curve' + type]
+        if (typeof (func) === 'function') return func
+        // ex curveLinear
+        func = d3[type]
+        if (typeof (func) === 'function') return func
+      }
+      return d3.curveNatural
     },
     startMove (event, bar) {
       let x = 0
@@ -264,4 +350,12 @@ export default {
 .line
   stroke: alpha(black,.5)
   stroke-width: 2px
+.curve
+  stroke: black
+  stroke-width : 3px
+  fill: none
+.curve-point
+  fill:gray
+  stroke: black  
+
 </style>

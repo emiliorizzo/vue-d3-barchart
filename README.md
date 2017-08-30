@@ -1,6 +1,7 @@
-# vue-d3-barchart 
- > Vue component to draw bar charts using d3 v4
+# Work in progress
 
+## vue-d3-barchart 
+ > Vue component to draw bar charts using d3 v4
 
 ## Demo
 
@@ -66,6 +67,15 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
   
   - xUnits: '', // x  suffix
   - yUnits: ''//  y suffix
+  - curve: Boolean | Object:
+    - type: String | Function
+      - String, name of d3 curve Types *ex: 'linearClosed' or 'curveLinearClosed'*
+    
+    - points: Boolean | Object
+      - Object: 
+        - style: Object *ex:{ fill:'red' }*
+
+     
 
 
     
