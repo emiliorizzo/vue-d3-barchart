@@ -47,7 +47,7 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
   - **data**: Array 
 
 - **options**:
-
+  - size:{w,h} 
   - getX: function(d)
   - getY: function(d)
   

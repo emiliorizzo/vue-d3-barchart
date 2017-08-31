@@ -1,8 +1,8 @@
 <template lang="pug">
   .d3-bar-chart
-    svg(v-if='bars.length' :width="w" :height="h")
+    svg(v-if='bars.length' :width='w' :height='h')
       defs(v-if='opts.gradient')
-        linearGradient(id="svgGradient")
+        linearGradient(id="svgGradient" x1="0" x2="100%" y1="0" y2="0")
           stop(v-for='d,i in bars' :offset='d.percentX + "%"' :key='i' :stop-color='d.color')
       
       //- Bars
