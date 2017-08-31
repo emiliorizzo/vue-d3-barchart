@@ -25,7 +25,11 @@ export default {
         { x: 11, y: 15 },
         { x: 12, y: 28 },
         { x: 13, y: 30 },
-        { x: 15, y: 17 }
+        { x: 15, y: 17 },
+        { x: 16, y: 3 },
+        { x: 17, y: 11 },
+        { x: 18, y: 22 },
+        { x: 19, y: 2 }
       ],
       options: {
         rules: true,
@@ -33,10 +37,7 @@ export default {
         labels: true,
         padding: 0.3,
         line: true,
-        points: true,
-        curve: {
-          type: 'Step'
-        },
+        points: false,
         value: false,
         getX: (d) => {
           return d.x
@@ -52,5 +53,7 @@ export default {
 <style lang="stylus">
   .chart
     display: inline-block
-    min-width: 100%
+    width: 600px
+    height: 200px
+    margin-top: 5em
 </style>

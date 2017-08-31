@@ -43,8 +43,13 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
 
 
 ## Props
-  
+
+  - **data**: Array 
+
 - **options**:
+
+  - getX: function(d)
+  - getY: function(d)
   
   - labels: Boolean
       Show axis labels
@@ -67,22 +72,27 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
   
   - xUnits: '', // x  suffix
   - yUnits: ''//  y suffix
+  - bars: Boolean : show bars
+  
   - curve: Boolean | Object:
     - type: String | Function
-      - String, name of d3 curve Types *ex: 'linearClosed' or 'curveLinearClosed'*
-    
-    - points: Boolean | Object
-      - Object: 
-        - style: Object *ex:{ fill:'red' }*
-
-     
-
-
-    
+      - String, name of d3 curve Types 
+        *ex: 'linearClosed' or 'curveLinearClosed'* (default: MonotoneX)
+        see [d3-shape#curves](https://github.com/d3/d3-shape#curves)
+      - Fuction: custom curve function
+    -attrs: Object {stroke, fill} 
+  
+  - points: Boolean | Object
+    - Object: 
+      - style: Object *ex:{ fill:'red' }*
 
 
 ## Events
 
+## Dependencies
 
+d3-scale
+d3-array
+d3-shape
 
 

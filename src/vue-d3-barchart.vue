@@ -1,37 +1,50 @@
 <template lang="pug">
-  .d3-bar-chart(@mousemove.prevent="moveLine")
+  .d3-bar-chart
     svg(v-if='bars.length' :width="w" :height="h")
+      defs(v-if='opts.gradient')
+        linearGradient(id="svgGradient")
+          stop(v-for='d,i in bars' :offset='d.percentX + "%"' :key='i' :stop-color='d.color')
+      
       //- Bars
-      g(v-if='bars' v-for="d,i in bars" class="bars")
+      g(v-if='bars && opts.bars' v-for="d,i in bars" class="bars")
+      
         //- visible bar  
         rect(:width="d.w" :height="d.y" :x='barX(d)' :y='barY(d)' :style='barStyle(d)' class="bar" @click='barClick($event,d)')
+      
         //- dummy bar to capture mouse events
         rect( v-if='opts.value || opts.line' :width="d.w" :height="h" :x="barX(d)" y='0' class="dummy-bar"
           @mouseover.prevent='startMove($event,d)'
           @mouseleave='stopMove($event,d)' 
           @click='barClick($event,d)'
           )
+      
         //- Rulers
         g(v-if='opts.rulers' class="rulers")
           rect(:x='d.x + margin + d.w / 2' :y='h -4' width='1' height='4' class="rulers-dot")
           rect(x='0' :y='h - d.y - fontSize' width='4' height='1' class="rulers-dot")
+      
         //- Labels
         g(v-if='opts.labels' class="labels")
           text(:font-size="fontSizeFixed" class="bar-text x-axis" :x="txtX(d)" :y="h") {{d.yv}}
           text(:font-size="fontSizeFixed" class="bar-text y-axis" x="0" :y="h - d.y") {{d.xv}}
+      
       //- Curve
-      g(v-if='opts.curve' class="curve")
-        path(:d='curve')
-      //-Curve point
+      g(v-if='opts.curve' :width="w" :height="h" class="curve")
+        path(:d='curve' :stroke='curveAttrs.stroke' :fill='curveAttrs.fill')
+      
+      //-Points
       g(v-if='opts.points' class="points")
         circle(v-for="d,i in bars" :r='pointRadius' :cx='barX(d) + barW /2' :cy='barY(d)' :style='pointStyle(d)' class="point")
+      
       //- Axis
       g(v-if='opts.axis' class="axis")
        line(x1='0' :x2='w' :y1='h-2' :y2='h-2' class="x-axis")
        line(x1='2' x2='2' y1='0' :y2='h' class="y-axis")
+      
       //- Line
       g(v-if="opts.line" v-show='over' class="chart-line")
         line(:x1='lineX' :x2='lineX' :y1='0' :y2='h - margin' class="line" )
+      
       //- Value  
       g(v-if="opts.value" v-show='over' class="chart-line")
         text(:font-size='fontSizeFixed' :x='lineX + fontSizeFixed' :y='fontSizeFixed' class="label") {{over.xv + " "+ opts.yUnits}}
@@ -59,11 +72,10 @@ const defaultOptions = {
     radius: 0,
     style: null
   },
-  curve: {
-    type: 'curve'
-  },
+  curve: null,
   bars: true,
   value: true,
+  gradientId: 'svgGradient',
   autoSize: {
     w: 180,
     h: 60
@@ -143,7 +155,7 @@ export default {
       let data = this.mappedData
 
       // Domain
-      let dom = this.opts.domain
+      // let dom = this.opts.domain
       let min = this.min
       let max = this.max
 
@@ -171,6 +183,14 @@ export default {
           .range(this.opts.colors)
       }
 
+      let percentX = d3.scaleLinear()
+        .domain([0, data.length - 1])
+        .range([0, 100])
+
+      let percentY = d3.scaleLinear()
+        .domain([min, max])
+        .range([0, 100])
+
       return data.map((d, i) => {
         return {
           xv: d,
@@ -178,6 +198,8 @@ export default {
           x: scaleX(i),
           y: scaleY(d) + 1,
           color: colors(d),
+          percentX: parseInt(percentX(i)),
+          percentY: parseInt(percentY(d)),
           w: scaleX.bandwidth()
         }
       })
@@ -187,7 +209,7 @@ export default {
         let data = this.mappedData
         let margin = this.margin
         let barw = this.barW / 2
-        let h = this.h - margin / 2
+        let h = this.h
         let w = this.w - barw
 
         let x = d3.scaleLinear()
@@ -207,7 +229,6 @@ export default {
         if (this.opts.curve.type) {
           curve.curve(this.curveType(this.opts.curve.type))
         }
-
         x.domain(d3.extent(data, (d, i) => { return i }))
         y.domain(d3.extent(data, (d) => { return d }))
 
@@ -215,8 +236,23 @@ export default {
       }
       return
     },
+    curveAttrs () {
+      let attribs = this.curve.attribs || {}
+      let strokeUrl = 'url(#' + this.opts.gradientId + ')'
+      if (this.options.gradient) {
+        if (this.opts.gradient.stroke) {
+          if (!attribs.stroke) attribs.stroke = strokeUrl
+        }
+        if (this.opts.gradient.fill) {
+          if (!attribs.fill) attribs.fill = strokeUrl
+        }
+      }
+      return attribs
+    },
     pointRadius () {
-      return this.opts.curve.pointRadius || (this.barW / 10)
+      let pr
+      if (this.opts.curve) pr = this.opts.curve.pointRadius
+      return pr || (this.barW / 10)
     },
     barW () {
       return this.bars[0].w || 0
@@ -247,7 +283,8 @@ export default {
       return (this.fontSize >= 10) ? this.fontSize : 10
     },
     margin () {
-      return this.fontSize * 2
+      return this.opts.margin || this.h / 10
+      // return this.fontSize * 2
     },
     lineX () {
       let over = this.over
@@ -295,7 +332,7 @@ export default {
         func = d3[type]
         if (typeof (func) === 'function') return func
       }
-      return d3.curveNatural
+      return d3.curveMonotoneX
     },
     startMove (event, bar) {
       let x = 0
@@ -325,6 +362,8 @@ export default {
 <style lang="stylus">
 .d3-bar-chart
   max-height: 100%
+  svg
+    overflow: visible 
 .bar
   fill: lightblue
   stroke: none
