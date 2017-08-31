@@ -2,7 +2,7 @@
   .d3-bar-chart
     svg(v-if='bars.length' :width='w' :height='h')
       defs(v-if='opts.gradient')
-        linearGradient(id="svgGradient" x1="0" x2="100%" y1="0" y2="0")
+        linearGradient(:id='gradientId' x1="0" x2="100%" y1="0" y2="0")
           stop(v-for='d,i in bars' :offset='d.percentX + "%"' :key='i' :stop-color='d.color')
       
       //- Bars
@@ -75,7 +75,6 @@ const defaultOptions = {
   curve: null,
   bars: true,
   value: true,
-  gradientId: 'svgGradient',
   autoSize: {
     w: 180,
     h: 60
@@ -106,6 +105,7 @@ export default {
       },
       over: false,
       getY: Math.abs,
+      gradientId: 'svgGradient',
       opts: Object.assign({}, defaultOptions)
     }
   },
@@ -135,6 +135,7 @@ export default {
     if (getX && typeof (getX) === 'function') {
       this.getX = getX
     }
+    this.gradientId = this.randomName('svgGrad-')
   },
   mounted () {
     this.onResize()
@@ -238,13 +239,13 @@ export default {
     },
     curveAttrs () {
       let attribs = this.curve.attribs || {}
-      let strokeUrl = 'url(#' + this.opts.gradientId + ')'
+      let strokeUrl = 'url(#' + this.gradientId + ')'
       if (this.options.gradient) {
         if (this.opts.gradient.stroke) {
-          if (!attribs.stroke) attribs.stroke = strokeUrl
+          attribs.stroke = strokeUrl
         }
         if (this.opts.gradient.fill) {
-          if (!attribs.fill) attribs.fill = strokeUrl
+          attribs.fill = strokeUrl
         }
       }
       return attribs
@@ -352,6 +353,11 @@ export default {
       setTimeout(() => {
         if (vm.over.x === d.x) vm.over = false
       }, 500)
+    },
+    randomName (prefix) {
+      let rnd = prefix || ''
+      rnd += Math.random().toString(36).substring(7)
+      return rnd
     },
     barClick (event, bar) {
       this.$emit('barClick', { bar, event })

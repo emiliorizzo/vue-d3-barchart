@@ -80,7 +80,7 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
         *ex: 'linearClosed' or 'curveLinearClosed'* (default: MonotoneX)
         see [d3-shape#curves](https://github.com/d3/d3-shape#curves)
       - Fuction: custom curve function
-    -attrs: Object {stroke, fill} 
+    -attrs: Object {stroke:Boolean, fill:Boolean} 
   
   - points: Boolean | Object
     - Object: 
