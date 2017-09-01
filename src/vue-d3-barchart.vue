@@ -1,54 +1,56 @@
 <template lang="pug">
-  .d3-bar-chart
-    svg(v-if='bars.length' :width='w' :height='h')
-      defs(v-if='opts.gradient')
-        linearGradient(:id='gradientId' x1="0" x2="100%" y1="0" y2="0")
-          stop(v-for='d,i in bars' :offset='d.percentX + "%"' :key='i' :stop-color='d.color')
+  svg.d3-bar-chart(v-if='bars.length' :width='w' :height='h')
+    defs(v-if='opts.gradient')
+      linearGradient(:id='gradientId' x1="0" x2="100%" y1="0" y2="0")
+        stop(v-for='d,i in bars' :offset='d.percentX + "%"' :key='i' :stop-color='d.color')
+    
+    //- Bars
+    g(v-if='bars' v-for="d,i in bars" class="bars")
+    
+      //- visible bar  
+      rect(v-if='opts.bars' :width="d.w" :height="d.y" :x='barX(d)' :y='barY(d)' :style='barStyle(d)' class="bar"
+        @click='barClick($event,d)')
+    
+      //- dummy bar to capture mouse events
+      rect.dummy-bar( v-if='opts.value || opts.line' :width="d.w" :height="h" :x="barX(d)" y='0' 
+        :class='(opts.bars) ? "has-bars":""'
+        @mouseover.prevent='startMove($event,d)'
+        @mouseleave='stopMove($event,d)' 
+        @click='barClick($event,d)'
+        )
+    
+      //- Rulers
+      g(v-if='opts.rulers' class="rulers")
+        rect(:x='d.x + margin + d.w / 2' :y='h -4' width='1' height='4' class="rulers-dot")
+        rect(x='0' :y='h - d.y - fontSize' width='4' height='1' class="rulers-dot")
+    
+      //- Labels
+      g(v-if='opts.labels' class="labels")
+        text(v-if='opts.labels.x' :font-size="fontSizeFixed" class="bar-text x-axis" :x="txtX(d)" :y="h") {{d.yv}}
+        text(v-if='opts.labels.y' :font-size="fontSizeFixed" class="bar-text y-axis" x="0" :y="h - d.y") {{d.xv}}
+    
+    //- Curve
+    g(v-if='opts.curve' :width="w" :height="h" class="curve")
+      path(:d='curve' :stroke='curveAttrs.stroke' :fill='curveAttrs.fill')
+    
+    //-Points
+    g(v-if='opts.points' class="points")
+      circle(v-for="d,i in bars" :r='pointRadius' :cx='barX(d) + barW /2' :cy='barY(d)' :style='pointStyle(d)' class="point")
+    
+    //- Axis
+    g(v-if='opts.axis' class="axis")
+      line(x1='0' :x2='w' :y1='h-2' :y2='h-2' class="x-axis")
+      line(x1='2' x2='2' y1='0' :y2='h' class="y-axis")
+    
+    //- Line
+    g(v-if="opts.line" v-show='over' class="chart-line")
+      line(:x1='lineX' :x2='lineX' :y1='0' :y2='h - margin' class="line" )
+    
+    //- Value  
+    g(v-if="opts.value" v-show='over' class="chart-line")
+      text(:font-size='fontSizeFixed' :x='lineX + fontSizeFixed' :y='fontSizeFixed / 2 ' class="label") y: {{over.xv + " "+ opts.yUnits}}
+      text(:font-size='fontSizeFixed' :x='lineX + fontSizeFixed' :y='fontSizeFixed*2' class="label")  x: {{over.yv + " "+ opts.xUnits}}
       
-      //- Bars
-      g(v-if='bars && opts.bars' v-for="d,i in bars" class="bars")
-      
-        //- visible bar  
-        rect(:width="d.w" :height="d.y" :x='barX(d)' :y='barY(d)' :style='barStyle(d)' class="bar" @click='barClick($event,d)')
-      
-        //- dummy bar to capture mouse events
-        rect( v-if='opts.value || opts.line' :width="d.w" :height="h" :x="barX(d)" y='0' class="dummy-bar"
-          @mouseover.prevent='startMove($event,d)'
-          @mouseleave='stopMove($event,d)' 
-          @click='barClick($event,d)'
-          )
-      
-        //- Rulers
-        g(v-if='opts.rulers' class="rulers")
-          rect(:x='d.x + margin + d.w / 2' :y='h -4' width='1' height='4' class="rulers-dot")
-          rect(x='0' :y='h - d.y - fontSize' width='4' height='1' class="rulers-dot")
-      
-        //- Labels
-        g(v-if='opts.labels' class="labels")
-          text(:font-size="fontSizeFixed" class="bar-text x-axis" :x="txtX(d)" :y="h") {{d.yv}}
-          text(:font-size="fontSizeFixed" class="bar-text y-axis" x="0" :y="h - d.y") {{d.xv}}
-      
-      //- Curve
-      g(v-if='opts.curve' :width="w" :height="h" class="curve")
-        path(:d='curve' :stroke='curveAttrs.stroke' :fill='curveAttrs.fill')
-      
-      //-Points
-      g(v-if='opts.points' class="points")
-        circle(v-for="d,i in bars" :r='pointRadius' :cx='barX(d) + barW /2' :cy='barY(d)' :style='pointStyle(d)' class="point")
-      
-      //- Axis
-      g(v-if='opts.axis' class="axis")
-       line(x1='0' :x2='w' :y1='h-2' :y2='h-2' class="x-axis")
-       line(x1='2' x2='2' y1='0' :y2='h' class="y-axis")
-      
-      //- Line
-      g(v-if="opts.line" v-show='over' class="chart-line")
-        line(:x1='lineX' :x2='lineX' :y1='0' :y2='h - margin' class="line" )
-      
-      //- Value  
-      g(v-if="opts.value" v-show='over' class="chart-line")
-        text(:font-size='fontSizeFixed' :x='lineX + fontSizeFixed' :y='fontSizeFixed' class="label") {{over.xv + " "+ opts.yUnits}}
-        
 </template>
 <script>
 import * as d3array from 'd3-array'
@@ -56,7 +58,10 @@ import * as d3scale from 'd3-scale'
 import * as d3Shape from 'd3-shape'
 const d3 = Object.assign({}, d3array, d3scale, d3Shape)
 const defaultOptions = {
-  labels: false, // render labels
+  labels: {
+    x: false,
+    y: false
+  }, // render labels
   axis: false, // render axis
   rulers: false, // render rules
   padding: 0.1, // bar padding
@@ -110,32 +115,7 @@ export default {
     }
   },
   created () {
-    for (let op in this.options) {
-      this.opts[op] = this.options[op]
-    }
-
-    // conditional color interpolator
-    let ci = this.opts.colorInterpol
-    if (ci) {
-      if (typeof (ci) === 'function') {
-        this.cInterpol = ci
-      } else {
-        if (typeof (d3[ci]) === 'function') {
-          this.cInterpol = d3[ci]
-        }
-      }
-    }
-    // Y get / format
-    let getY = this.options.getY
-    if (getY && typeof (getY) === 'function') {
-      this.getY = getY
-    }
-    // X get / format
-    let getX = this.options.getX
-    if (getX && typeof (getX) === 'function') {
-      this.getX = getX
-    }
-    this.gradientId = this.randomName('svgGrad-')
+    this.init()
   },
   mounted () {
     this.onResize()
@@ -146,6 +126,7 @@ export default {
   },
   watch: {
     options (newValue) {
+      this.init()
       this.onResize()
     }
   },
@@ -294,6 +275,34 @@ export default {
     }
   },
   methods: {
+    init () {
+      for (let op in this.options) {
+        this.opts[op] = this.options[op]
+      }
+
+      // conditional color interpolator
+      let ci = this.opts.colorInterpol
+      if (ci) {
+        if (typeof (ci) === 'function') {
+          this.cInterpol = ci
+        } else {
+          if (typeof (d3[ci]) === 'function') {
+            this.cInterpol = d3[ci]
+          }
+        }
+      }
+      // Y get / format
+      let getY = this.options.getY
+      if (getY && typeof (getY) === 'function') {
+        this.getY = getY
+      }
+      // X get / format
+      let getX = this.options.getX
+      if (getX && typeof (getX) === 'function') {
+        this.getX = getX
+      }
+      this.gradientId = this.randomName('svgGrad-')
+    },
     onResize () {
       let w, h
       if (!this.options.size) {
@@ -368,8 +377,10 @@ export default {
 <style lang="stylus">
 .d3-bar-chart
   max-height: 100%
+  max-width 100%
   svg
-    overflow: visible 
+    width 100%
+    overflow: visible
 .bar
   fill: lightblue
   stroke: none
@@ -378,6 +389,8 @@ export default {
   fill: none
   stroke: none
   pointer-events: all
+
+.dummy-bar.has-bars
   &:hover
     fill: alpha(black,.1)
 
@@ -391,7 +404,6 @@ export default {
 .axis
   stroke-width: 1px
   stroke: gray
-
 .line
   stroke: alpha(black,.5)
   stroke-width: 2px
