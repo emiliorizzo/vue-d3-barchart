@@ -1,4 +1,5 @@
-# Work in progress
+
+[![GitHub issues](https://img.shields.io/github/issues/emiliorizzo/vue-d3-barchart.svg)](https://github.com/emiliorizzo/vue-d3-barchart/issues) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/emiliorizzo/vue-d3-barchart/master/LICENSE) [![npm](https://img.shields.io/npm/v/vue-d3-barchart.svg)](https://www.npmjs.com/package/vue-d3-barchart)
 
 ## vue-d3-barchart 
  > Vue component to draw bar charts using d3 v4
@@ -15,7 +16,6 @@ npm install vue-d3-barchart --save
 ```
 
 ## Usage
-
 
 ```xml
   ...  
@@ -44,55 +44,81 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
 
 ## Props
 
-  - **data**: Array 
+  - **data**: Array of values or objects *(see options: getX,getY)*
 
 - **options**:
-  - size:{w,h} 
-  - getX: function(d)
-  - getY: function(d)
+- 
+  - **size**:{w,h} 
+  - **getX**: function(d)
+  - **getY**: function(d)
   
-  - labels: Boolean
-      Show axis labels
+  - **labels**: Boolean *show axis labels*
   
-  - axis: Boolean
+  - **axis**: { valuesY:Boolean, valuesX:boolean, linesX:boolean, linesY:boolean }
       render axis
+  - **axisTicks**
+  - **padding**: 0.1 bar padding
   
-  - rulers: Boolean
-      render rules
-  
-  - padding: 0.1 
-    bar padding
-  
-  - colors: [ maxValueColor, minValueColor ], null to no colors
+  - **colors**: Array | Object 
+    - Array: (range) [ maxValueColor, minValueColor ]
+    - Object { key(value): color} , max values first 
 
-  - colorInterpol: Function | name of D3 function | null
+  - **colorInterpol**: Function | name of D3 function 
+  - **colorScale**: Function | name of D3 function 
+      *(colorInterpol Overrides this option)*
+  - **colorFunc**: Color Function: (d) => {return color}, *Overrides colorScale and colorInterpol*
   
-  - line: Boolean
+  - **line**: Boolean
     render line
   
-  - xUnits: '', // x  suffix
-  - yUnits: ''//  y suffix
+  - **formatX**: Function(x) --> x
+  - **formatY**: Function(y) --> y
+  - **formatLabel**(d, formatX, formatY) -> Array, one value per line
+
+*default:*
+```javasctipt
+      formatLabel (bar, formatX, formatY) {
+        return [
+          'x: ' + formatX(bar.xv),
+          'y: ' + formatY(bar.yv)
+        ]
+      },
+```
   - bars: Boolean : show bars
   
   - curve: Boolean | Object:
     - type: String | Function
+      
       - String, name of d3 curve Types 
         *ex: 'linearClosed' or 'curveLinearClosed'* (default: MonotoneX)
         see [d3-shape#curves](https://github.com/d3/d3-shape#curves)
+      
       - Fuction: custom curve function
-    -attrs: Object {stroke:Boolean, fill:Boolean} 
+    - style: Object: {stroke:Boolean, fill:Boolean} 
   
-  - points: Boolean | Object
-    - Object: 
-      - style: Object *ex:{ fill:'red' }*
+  - marks: Boolean | Object: {type: point | square  style:{fill,stroke}, size}
 
+
+## d object
+ 
+  - **xv**: *original x value*
+  - **yv**: *original y value*
+  - **x**: *computed chart x value*
+  - **y**: computed chart y value
+  - **color**: *computed chart color*
+  - **percentX**: percent of x
+  - **percentY**: percent of y
+  - **w**: *computed bar width*,
+  - **d**: original data
 
 ## Events
 
+- barClick: fired on click/touch bar, emits bar,event
+
 ## Dependencies
 
-d3-scale
-d3-array
-d3-shape
+- d3-scale
+- d3-array
+- d3-shape
 
 

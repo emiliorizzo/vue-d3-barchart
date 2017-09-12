@@ -4,52 +4,56 @@
       linearGradient(:id='gradientId' x1="0" x2="100%" y1="0" y2="0")
         stop(v-for='d,i in bars' :offset='d.percentX + "%"' :key='i' :stop-color='d.color')
     
+    //- Lines Y
+    g.lines(v-if='opts.axis.linesY')
+      line.line-y(v-for='a,i in axisY' :x1='margin' :x2='w' :y1='a.y' :y2='a.y' )
     //- Bars
-    g(v-if='bars' v-for="d,i in bars" class="bars")
+    g(v-for="d,i in bars" class="bars")
     
       //- visible bar  
-      rect(v-if='opts.bars' :width="d.w" :height="d.y" :x='barX(d)' :y='barY(d)' :style='barStyle(d)' class="bar"
+      rect.bar(v-if='opts.bars' :width="d.w" :height="d.y" :x='barX(d)' :y='barY(d)' :style='barStyle(d)'
         @click='barClick($event,d)')
     
       //- dummy bar to capture mouse events
-      rect.dummy-bar( v-if='opts.value || opts.line' :width="d.w" :height="h" :x="barX(d)" y='0' 
+      rect.dummy-bar( v-if='(opts.tip || opts.line) && d.yv > 0' :width="d.w" :height="h" :x="barX(d)" y='0' 
         :class='(opts.bars) ? "has-bars":""'
         @mouseover.prevent='startMove($event,d)'
         @mouseleave='stopMove($event,d)' 
         @click='barClick($event,d)'
+        @touchstart='barClick($event,d)'
         )
     
-      //- Rulers
-      g(v-if='opts.rulers' class="rulers")
-        rect(:x='d.x + margin + d.w / 2' :y='h -4' width='1' height='4' class="rulers-dot")
-        rect(x='0' :y='h - d.y - fontSize' width='4' height='1' class="rulers-dot")
-    
-      //- Labels
-      g(v-if='opts.labels' class="labels")
-        text(v-if='opts.labels.x' :font-size="fontSizeFixed" class="bar-text x-axis" :x="txtX(d)" :y="h") {{d.yv}}
-        text(v-if='opts.labels.y' :font-size="fontSizeFixed" class="bar-text y-axis" x="0" :y="h - d.y") {{d.xv}}
-    
     //- Curve
-    g(v-if='opts.curve' :width="w" :height="h" class="curve")
-      path(:d='curve' :stroke='curveAttrs.stroke' :fill='curveAttrs.fill')
+    g.curve(v-if='opts.curve')
+      path(:d='curve' :stroke='curveStyle.stroke' :style='curveStyle' :fill='curveStyle.fill')
     
-    //-Points
-    g(v-if='opts.points' class="points")
-      circle(v-for="d,i in bars" :r='pointRadius' :cx='barX(d) + barW /2' :cy='barY(d)' :style='pointStyle(d)' class="point")
+    //-Marks
+    g(v-if='opts.marks' class="marks")
+      rect.mark(v-if='opts.marks.type === "square"' 
+        v-for="d,i in bars" :key='i' :x='barX(d) + (barW /2) - (markSize /2)' :y='barY(d)-(markSize /2)' :width='markSize' :height='markSize' :style='markStyle(d)')
+      circle.mark(v-if='opts.marks.type !=="square"' v-for="d,i in bars" :key='i' :r='markSize / 2' :cx='barX(d) + barW /2' :cy='barY(d)' :style='markStyle(d)')
     
     //- Axis
-    g(v-if='opts.axis' class="axis")
-      line(x1='0' :x2='w' :y1='h-2' :y2='h-2' class="x-axis")
-      line(x1='2' x2='2' y1='0' :y2='h' class="y-axis")
+    g.axis(v-if='opts.axis')
+      line.x-axis(:x1='oX' :x2='w' :y1='hh' :y2='hh')
+      line.y-axis(:x1='oX' :x2='oX ' y1='0' :y2='hh')
+      g(v-for='a,i in axisY')
+        text.axis-label(v-if='opts.axis.valuesY' x='0' :y='a.y' ) {{a.value}}
     
     //- Line
-    g(v-if="opts.line" v-show='over' class="chart-line")
-      line(:x1='lineX' :x2='lineX' :y1='0' :y2='h - margin' class="line" )
+    g.chart-line(v-if="opts.line" v-show='over')
+      line.line(:x1='lineX' :x2='lineX' :y1='0' :y2='h - margin')
     
     //- Value  
-    g(v-if="opts.value" v-show='over' class="chart-line")
-      text(:font-size='fontSizeFixed' :x='lineX + fontSizeFixed' :y='fontSizeFixed / 2 ' class="label") y: {{over.xv + " "+ opts.yUnits}}
-      text(:font-size='fontSizeFixed' :x='lineX + fontSizeFixed' :y='fontSizeFixed*2' class="label")  x: {{over.yv + " "+ opts.xUnits}}
+    g.chart-tip(v-if="opts.tip && over" )
+      rect.chart-tip-back( v-if='opts.tipBack' 
+        :x='lineX + fontSize/2' :y='0' :width='labelW + "ex"' :height='label.length + .25 + "em"' 
+        :rx='labelW / 5' :ry='label.lenght'
+        @touchstart='barClick(over)'
+        )
+      text.label( :x='lineX + fontSize' y='0' :font-size='fontSize')
+        tspan.label-line(v-for='txt,index in label' 
+          :key='index' :x='lineX + fontSize' dy='1.2em' :class='"l-" + index ' ) {{txt}}
       
 </template>
 <script>
@@ -63,7 +67,6 @@ const defaultOptions = {
     y: false
   }, // render labels
   axis: false, // render axis
-  rulers: false, // render rules
   padding: 0.1, // bar padding
   colors: ['orangered', 'lightgreen'], // colors [max, min] or null
   colorInterpol: null, // color Interpolator
@@ -73,13 +76,18 @@ const defaultOptions = {
   xUnits: '', // x  suffix
   yUnits: '', //  y suffix
   domain: { min: null, max: null }, // graph domain, nulls are evaluated as default
-  points: {
-    radius: 0,
+  marks: {
+    type: 'point',
+    size: 10,
     style: null
   },
   curve: null,
+  debug: false,
+  axisTicks: 5,
   bars: true,
-  value: true,
+  tip: true,
+  fontSize: 10,
+  tipBack: true,
   autoSize: {
     w: 180,
     h: 60
@@ -102,7 +110,7 @@ export default {
     return {
       w: 800,
       h: 500,
-      cInterpol: null,
+      colorInterpol: null,
       mouseX: 30,
       mouseOffset: {
         x: 0,
@@ -111,6 +119,22 @@ export default {
       over: false,
       getY: Math.abs,
       gradientId: 'svgGradient',
+      colorScale: d3.scaleLinear,
+      // default label formatter, -> array, one value per line
+      formatLabel (bar, formatX, formatY) {
+        return [
+          'y: ' + formatY(bar.yv),
+          'x: ' + formatX(bar.xv)
+        ]
+      },
+      // default x  formatter
+      formatX (x) {
+        return x
+      },
+      // default y formatter
+      formatY (y) {
+        return y
+      },
       opts: Object.assign({}, defaultOptions)
     }
   },
@@ -119,10 +143,6 @@ export default {
   },
   mounted () {
     this.onResize()
-    window.addEventListener('resize', this.onResize)
-  },
-  beforeDestroy () {
-    window.removeEventListener('resize', this.onResize)
   },
   watch: {
     options (newValue) {
@@ -131,74 +151,105 @@ export default {
     }
   },
   computed: {
-    bars () {
-      let h = this.h - this.margin
-      let w = this.w - this.margin
-      let data = this.mappedData
-
-      // Domain
-      // let dom = this.opts.domain
-      let min = this.min
-      let max = this.max
-
-      let scaleX = d3.scaleBand()
-        .domain(d3.range(data.length))
+    scaleX () {
+      return d3.scaleBand()
+        .domain(d3.range(this.mappedData.length))
         .paddingInner(this.opts.padding)
-        .rangeRound([0, w])
-
-      let scaleY = d3.scaleLinear()
-        .domain([min, max])
-        .rangeRound([0, h])
-
-      // default color function
-      let colors = (c) => { return '' }
-
+        .rangeRound([0, this.ww])
+    },
+    scaleY () {
+      return d3.scaleLinear()
+        .domain([this.min, this.max])
+        .rangeRound([0, this.hh])
+    },
+    percentX () {
+      return d3.scaleLinear()
+        .domain([0, this.mappedData.length - 1])
+        .range([0, 100])
+    },
+    percentY () {
+      return d3.scaleLinear()
+        .domain([this.min, this.max])
+        .range([0, 100])
+    },
+    colors () {
+      if (this.opts.colorFunc) return this.opts.colorFunc
+      let colors = (d) => { return 'red' }
       // color with interpolator
-      if (this.cInterpol) {
+      if (this.colorInterpol) {
         colors = d3.scaleSequential()
-          .domain([max, min])
-          .interpolator(this.cInterpol)
+          .domain([this.max, this.min])
+          .interpolator(this.colorInterpol)
         // color with max, min
       } else if (this.opts.colors) {
-        colors = d3.scaleLinear()
-          .domain([max, min])
-          .range(this.opts.colors)
+        let uColors = this.opts.colors
+
+        let range
+        let domain = [this.max, this.min]
+        if (Array.isArray(uColors)) {
+          range = uColors
+        } else if (typeof (uColors) === 'object') {
+          range = Object.values(uColors)
+          domain = Object.keys(uColors)
+        }
+        colors = this.colorScale()
+          .domain(domain)
+          .range(range)
       }
+      return colors
+    },
+    axisY () {
+      let ticks = this.opts.axisTicks
+      ticks = (ticks <= this.max) ? ticks : this.max
+      let axis = []
 
-      let percentX = d3.scaleLinear()
-        .domain([0, data.length - 1])
-        .range([0, 100])
+      let scaleV = d3.scaleLinear()
+        .domain([0, ticks])
+        .rangeRound([0, this.max])
 
-      let percentY = d3.scaleLinear()
-        .domain([min, max])
-        .range([0, 100])
+      let scaleY = d3.scaleLinear()
+        .domain([0, ticks])
+        .rangeRound([this.hh, 0])
 
-      return data.map((d, i) => {
+      for (let i = 0; i <= ticks; i++) {
+        let v = scaleV(i)
+        axis.push({
+          v: v,
+          value: this.formatY(v),
+          y: scaleY(i)
+        })
+      }
+      return axis
+    },
+    bars () {
+      return this.mappedData.map((d, i) => {
         return {
-          xv: d,
-          yv: i,
-          x: scaleX(i),
-          y: scaleY(d) + 1,
-          color: colors(d),
-          percentX: parseInt(percentX(i)),
-          percentY: parseInt(percentY(d)),
-          w: scaleX.bandwidth()
+          xv: i,
+          yv: d,
+          x: this.scaleX(i),
+          y: this.scaleY(d) + 1,
+          color: this.colors(d),
+          percentX: parseInt(this.percentX(i)),
+          percentY: parseInt(this.percentY(d)),
+          w: this.scaleX.bandwidth(),
+          d: this.data[i]
         }
       })
     },
     curve () {
       if (this.opts.curve) {
+        let opts = this.opts
         let data = this.mappedData
         let margin = this.margin
-        let barw = this.barW / 2
-        let h = this.h
-        let w = this.w - barw
+        let barw = this.barW
+        let h = this.hh
+        let w = this.ww
 
         let x = d3.scaleLinear()
-          .rangeRound([barw + margin, w])
-
+          .range([Math.floor(margin + (barw * 1.5) + barw * this.barPad), Math.floor(w - barw / 2)])
         let y = d3.scaleLinear()
-          .rangeRound([h, 0])
+          .range([h, 0])
+
         let curve = d3.line()
           .x((d, i) => {
             return x(i)
@@ -208,8 +259,8 @@ export default {
           })
 
         // curve type
-        if (this.opts.curve.type) {
-          curve.curve(this.curveType(this.opts.curve.type))
+        if (opts.curve.type) {
+          curve.curve(this.curveType(opts.curve.type))
         }
         x.domain(d3.extent(data, (d, i) => { return i }))
         y.domain(d3.extent(data, (d) => { return d }))
@@ -218,26 +269,44 @@ export default {
       }
       return
     },
-    curveAttrs () {
-      let attribs = this.curve.attribs || {}
+    curveStyle () {
+      let style = this.opts.curve.style || {}
       let strokeUrl = 'url(#' + this.gradientId + ')'
       if (this.options.gradient) {
         if (this.opts.gradient.stroke) {
-          attribs.stroke = strokeUrl
+          style.stroke = strokeUrl
         }
         if (this.opts.gradient.fill) {
-          attribs.fill = strokeUrl
+          style.fill = strokeUrl
         }
       }
-      return attribs
+      return style
     },
-    pointRadius () {
-      let pr
-      if (this.opts.curve) pr = this.opts.curve.pointRadius
-      return pr || (this.barW / 10)
+    oX () {
+      return this.margin + (this.barW / 2)
+    },
+    oY () {
+      return this.margin / 2
+    },
+    hh () {
+      return this.h - (this.margin / 2)
+    },
+    ww () {
+      return this.w - this.margin
     },
     barW () {
-      return this.bars[0].w || 0
+      return this.scaleX.bandwidth()
+    },
+    barStep () {
+      return this.scaleX.step()
+    },
+    barPad () {
+      return this.scaleX.padding()
+    },
+    markSize () {
+      if (this.opts.marks && this.opts.marks.size) return this.opts.marks.size
+      if (this.barW) return this.barW / 10
+      return 5
     },
     min () {
       let dom = this.opts.domain
@@ -256,13 +325,13 @@ export default {
       return data
     },
     fontSize () {
+      return this.opts.fontSize
+    },
+    fontSizeComp () {
       let maxChars = d3.max(this.data.map((d) => {
         return String(d).length
       }))
       return this.w / (maxChars * this.data.length * 2)
-    },
-    fontSizeFixed () {
-      return (this.fontSize >= 10) ? this.fontSize : 10
     },
     margin () {
       return this.opts.margin || this.h / 10
@@ -272,36 +341,63 @@ export default {
       let over = this.over
       if (over) return over.x + this.margin + (over.w / 2)
       return 0
+    },
+    label () {
+      return this.createLabel(this.over)
+    },
+    // calculates label with by max line chars (ex)
+    labelW () {
+      let maxLen = d3.max(this.label.map((l) => {
+        return l.toString().length
+      }))
+      return (maxLen) ? maxLen + 1 : 0
     }
   },
   methods: {
+    createLabel (bar) {
+      return this.formatLabel(bar, this.formatX, this.formatY)
+    },
     init () {
-      for (let op in this.options) {
-        this.opts[op] = this.options[op]
+      let opts = this.opts
+      let options = this.options
+
+      for (let op in options) {
+        opts[op] = options[op]
       }
+      let props = ['formatLabel', 'formatX', 'formatY']
+      for (let prop of props) {
+        if (options[prop]) this[prop] = options[prop]
+      }
+      if (!options.marks) opts.marks = null
 
       // conditional color interpolator
-      let ci = this.opts.colorInterpol
-      if (ci) {
-        if (typeof (ci) === 'function') {
-          this.cInterpol = ci
-        } else {
-          if (typeof (d3[ci]) === 'function') {
-            this.cInterpol = d3[ci]
-          }
-        }
-      }
+      this.setFucntion('colorInterpol')
+      // Color Scale function
+      this.setFucntion('colorScale')
+
       // Y get / format
-      let getY = this.options.getY
+      let getY = options.getY
       if (getY && typeof (getY) === 'function') {
         this.getY = getY
       }
       // X get / format
-      let getX = this.options.getX
+      let getX = options.getX
       if (getX && typeof (getX) === 'function') {
         this.getX = getX
       }
       this.gradientId = this.randomName('svgGrad-')
+    },
+    setFucntion (name, value) {
+      let f = this.opts[name]
+      if (f) {
+        if (typeof (f) === 'function') {
+          this[name] = f
+        } else {
+          if (typeof (d3[f]) === 'function') {
+            this[name] = d3[f]
+          }
+        }
+      }
     },
     onResize () {
       let w, h
@@ -317,11 +413,13 @@ export default {
     },
     barX (d) {
       let x = d.x + this.margin
-      return (x > -1) ? x : 0
+      return x
+      // return (x > -1) ? x : 0
     },
     barY (d) {
       let y = this.h - d.y - this.margin / 2
-      return (y > -1) ? y : 0
+      return y
+      // return (y > -1) ? y : 0
     },
     txtX (d) {
       return d.x + d.w / 2 - String(d.x).length * this.fontSize / 2 + this.margin
@@ -329,8 +427,8 @@ export default {
     barStyle (d) {
       return (this.opts.colors) ? 'fill: ' + d.color : ''
     },
-    pointStyle (d) {
-      return this.opts.points.style || this.barStyle(d)
+    markStyle (d) {
+      return this.opts.marks.style || this.barStyle(d)
     },
     curveType (type) {
       if (type) {
@@ -358,10 +456,7 @@ export default {
       this.mouseX = event.pageX - this.mouseOffset.x
     },
     stopMove (event, d) {
-      let vm = this
-      setTimeout(() => {
-        if (vm.over.x === d.x) vm.over = false
-      }, 500)
+      this.over = false
     },
     randomName (prefix) {
       let rnd = prefix || ''
@@ -369,6 +464,7 @@ export default {
       return rnd
     },
     barClick (event, bar) {
+      this.over = (this.over === bar) ? false : bar
       this.$emit('barClick', { bar, event })
     }
   }
@@ -379,11 +475,11 @@ export default {
   max-height: 100%
   max-width 100%
   svg
-    width 100%
     overflow: visible
 .bar
-  fill: lightblue
+  fill: cyan
   stroke: none
+
 
 .dummy-bar
   fill: none
@@ -400,10 +496,17 @@ export default {
 .rulers
   stroke-width: 1px
   stroke: black
-
+.lines
+  stroke gray
+  stroke-width 1px
+  stroke-opacity .3
 .axis
   stroke-width: 1px
   stroke: gray
+.axis-label 
+  fill: gray
+  stroke: none
+  font-size: 8px
 .line
   stroke: alpha(black,.5)
   stroke-width: 2px
@@ -414,5 +517,11 @@ export default {
 .curve-point
   fill:gray
   stroke: black  
+.chart-tip-back
+  fill: black
+  stroke-width 1px
+  stroke gray
+  opacity .5
 
+  
 </style>
