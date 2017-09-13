@@ -84,9 +84,10 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
         ]
       },
 ```
-  - bars: Boolean : show bars
+  - **bars**: Boolean : show bars | Object: 
+    - gradient: Boolean | Object : { sroke:Boolean, fill:Boolean }
   
-  - curve: Boolean | Object:
+  - **curve**: Boolean | Object:
     - type: String | Function
       
       - String, name of d3 curve Types 
@@ -94,9 +95,10 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
         see [d3-shape#curves](https://github.com/d3/d3-shape#curves)
       
       - Fuction: custom curve function
-    - style: Object: {stroke:Boolean, fill:Boolean} 
+    - style: Object: {css-prop: value} 
+    - gradient: Boolean | Object : { sroke:Boolean, fill:Boolean }
   
-  - marks: Boolean | Object: {type: point | square  style:{fill,stroke}, size}
+  - **marks**: Boolean | Object: {type: point | square  style:{ fill , stroke }, size }
 
 
 ## d object

@@ -1,6 +1,7 @@
 <template lang="pug">
   svg.d3-bar-chart(v-if='bars.length' :width='w' :height='h')
-    defs(v-if='opts.gradient')
+    //- Gradient
+    defs(v-if='renderGradient')
       linearGradient(:id='gradientId' x1="0" x2="100%" y1="0" y2="0")
         stop(v-for='d,i in bars' :offset='d.percentX + "%"' :key='i' :stop-color='d.color')
     
@@ -84,7 +85,9 @@ const defaultOptions = {
   curve: null,
   debug: false,
   axisTicks: 5,
-  bars: true,
+  bars: {
+    gradient: false
+  },
   tip: true,
   fontSize: 10,
   tipBack: true,
@@ -172,6 +175,11 @@ export default {
         .domain([this.min, this.max])
         .range([0, 100])
     },
+    renderGradient () {
+      let curve = this.opts.curve
+      let bars = this.opts.bars
+      return (bars && bars.gradient) || (curve && curve.gradient)
+    },
     colors () {
       if (this.opts.colorFunc) return this.opts.colorFunc
       let colors = (d) => { return 'red' }
@@ -257,7 +265,6 @@ export default {
           .y((d) => {
             return y(d)
           })
-
         // curve type
         if (opts.curve.type) {
           curve.curve(this.curveType(opts.curve.type))
@@ -270,17 +277,7 @@ export default {
       return
     },
     curveStyle () {
-      let style = this.opts.curve.style || {}
-      let strokeUrl = 'url(#' + this.gradientId + ')'
-      if (this.options.gradient) {
-        if (this.opts.gradient.stroke) {
-          style.stroke = strokeUrl
-        }
-        if (this.opts.gradient.fill) {
-          style.fill = strokeUrl
-        }
-      }
-      return style
+      return this.gradientStyle('curve')
     },
     oX () {
       return this.margin + (this.barW / 2)
@@ -411,6 +408,23 @@ export default {
       this.w = (w > 0) ? w : this.opts.autoSize.w
       this.h = (h > 0) ? h : this.opts.autoSize.h
     },
+    gradientStyle (name) {
+      let style = {}
+      let e = this.opts[name]
+      if (e) {
+        style = e.style || {}
+        let strokeUrl = 'url(#' + this.gradientId + ')'
+        if (e.gradient) {
+          if (e.gradient.stroke) {
+            style.stroke = strokeUrl
+          }
+          if (e.gradient.fill) {
+            style.fill = strokeUrl
+          }
+        }
+      }
+      return style
+    },
     barX (d) {
       let x = d.x + this.margin
       return x
@@ -425,7 +439,9 @@ export default {
       return d.x + d.w / 2 - String(d.x).length * this.fontSize / 2 + this.margin
     },
     barStyle (d) {
-      return (this.opts.colors) ? 'fill: ' + d.color : ''
+      let style = this.gradientStyle('bars')
+      if (!style.fill) style.fill = (this.opts.colors) ? d.color : ''
+      return style
     },
     markStyle (d) {
       return this.opts.marks.style || this.barStyle(d)
