@@ -97,6 +97,9 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
       - Fuction: custom curve function
     - style: Object: {css-prop: value} 
     - gradient: Boolean | Object : { sroke:Boolean, fill:Boolean }
+    - **close**: Boolean, close curve to chart limits
+  
+  - **curveBack**: render another curve, with same settings as default. 
   
   - **marks**: Boolean | Object: {type: point | square  style:{ fill , stroke }, size }
 

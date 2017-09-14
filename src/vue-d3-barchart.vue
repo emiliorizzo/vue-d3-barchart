@@ -8,39 +8,44 @@
     //- Lines Y
     g.lines(v-if='opts.axis.linesY')
       line.line-y(v-for='a,i in axisY' :x1='margin' :x2='w' :y1='a.y' :y2='a.y' )
+    //- Axis
+    g.axis(v-if='opts.axis')
+      line.x-axis(:x1='oX' :x2='w' :y1='hh' :y2='hh')
+      line.y-axis(:x1='oX' :x2='oX ' y1='0' :y2='hh')
+      //- Axis labels
+      g.axis-labels
+        template(v-for='a,i in axisY')
+          text.axis-label(v-if='opts.axis.valuesY' x='0' :y='a.y' ) {{a.value}}
+    //- Back Curve
+    g.curve-back(v-if='opts.curveBack')
+      path(:d='curve(opts.curveBack)' :stroke='curveBackStyle.stroke' :style='curveBackStyle' :fill='curveBackStyle.fill')     
     //- Bars
-    g(v-for="d,i in bars" class="bars")
-    
-      //- visible bar  
-      rect.bar(v-if='opts.bars' :width="d.w" :height="d.y" :x='barX(d)' :y='barY(d)' :style='barStyle(d)'
-        @click='barClick($event,d)')
-    
-      //- dummy bar to capture mouse events
-      rect.dummy-bar( v-if='(opts.tip || opts.line) && d.yv > 0' :width="d.w" :height="h" :x="barX(d)" y='0' 
-        :class='(opts.bars) ? "has-bars":""'
-        @mouseover.prevent='startMove($event,d)'
-        @mouseleave='stopMove($event,d)' 
-        @click='barClick($event,d)'
-        @touchstart='barClick($event,d)'
-        )
-    
+    g.bars
+      template(v-for="d,i in bars")
+        //- visible bar  
+        rect.bar(v-if='opts.bars' :width="d.w" :height="d.y" :x='barX(d)' :y='barY(d)' :style='barStyle(d)'
+          @click='barClick($event,d)')
+
     //- Curve
     g.curve(v-if='opts.curve')
-      path(:d='curve' :stroke='curveStyle.stroke' :style='curveStyle' :fill='curveStyle.fill')
-    
+      path(:d='curve(opts.curve)' :stroke='curveStyle.stroke' :style='curveStyle' :fill='curveStyle.fill')
+    //-
+    //- dummy bars to capture mouse events
+    g.dummies
+      template(v-for="d,i in bars")
+        rect.dummy-bar( v-if='(opts.tip || opts.line) && d.yv > 0' :width="d.w" :height="h" :x="barX(d)" y='0' 
+          :class='(opts.bars) ? "has-bars":""'
+          @mouseover.prevent='startMove($event,d)'
+          @mouseleave='stopMove($event,d)' 
+          @click='barClick($event,d)'
+          @touchstart='barClick($event,d)'
+          )
+    //-
     //-Marks
     g(v-if='opts.marks' class="marks")
       rect.mark(v-if='opts.marks.type === "square"' 
         v-for="d,i in bars" :key='i' :x='barX(d) + (barW /2) - (markSize /2)' :y='barY(d)-(markSize /2)' :width='markSize' :height='markSize' :style='markStyle(d)')
       circle.mark(v-if='opts.marks.type !=="square"' v-for="d,i in bars" :key='i' :r='markSize / 2' :cx='barX(d) + barW /2' :cy='barY(d)' :style='markStyle(d)')
-    
-    //- Axis
-    g.axis(v-if='opts.axis')
-      line.x-axis(:x1='oX' :x2='w' :y1='hh' :y2='hh')
-      line.y-axis(:x1='oX' :x2='oX ' y1='0' :y2='hh')
-      g(v-for='a,i in axisY')
-        text.axis-label(v-if='opts.axis.valuesY' x='0' :y='a.y' ) {{a.value}}
-    
     //- Line
     g.chart-line(v-if="opts.line" v-show='over')
       line.line(:x1='lineX' :x2='lineX' :y1='0' :y2='h - margin')
@@ -123,6 +128,9 @@ export default {
       getY: Math.abs,
       gradientId: 'svgGradient',
       colorScale: d3.scaleLinear,
+      curveBack: null,
+      curveBackStyle: {},
+      curveStyle: {},
       // default label formatter, -> array, one value per line
       formatLabel (bar, formatX, formatY) {
         return [
@@ -178,7 +186,8 @@ export default {
     renderGradient () {
       let curve = this.opts.curve
       let bars = this.opts.bars
-      return (bars && bars.gradient) || (curve && curve.gradient)
+      let curveBack = this.opts.curveBack
+      return (bars && bars.gradient) || (curve && curve.gradient) || (curveBack && curveBack.gradient)
     },
     colors () {
       if (this.opts.colorFunc) return this.opts.colorFunc
@@ -213,7 +222,7 @@ export default {
 
       let scaleV = d3.scaleLinear()
         .domain([0, ticks])
-        .rangeRound([0, this.max])
+        .rangeRound([this.min, this.max])
 
       let scaleY = d3.scaleLinear()
         .domain([0, ticks])
@@ -243,41 +252,6 @@ export default {
           d: this.data[i]
         }
       })
-    },
-    curve () {
-      if (this.opts.curve) {
-        let opts = this.opts
-        let data = this.mappedData
-        let margin = this.margin
-        let barw = this.barW
-        let h = this.hh
-        let w = this.ww
-
-        let x = d3.scaleLinear()
-          .range([Math.floor(margin + (barw * 1.5) + barw * this.barPad), Math.floor(w - barw / 2)])
-        let y = d3.scaleLinear()
-          .range([h, 0])
-
-        let curve = d3.line()
-          .x((d, i) => {
-            return x(i)
-          })
-          .y((d) => {
-            return y(d)
-          })
-        // curve type
-        if (opts.curve.type) {
-          curve.curve(this.curveType(opts.curve.type))
-        }
-        x.domain(d3.extent(data, (d, i) => { return i }))
-        y.domain(d3.extent(data, (d) => { return d }))
-
-        return curve(data)
-      }
-      return
-    },
-    curveStyle () {
-      return this.gradientStyle('curve')
     },
     oX () {
       return this.margin + (this.barW / 2)
@@ -351,6 +325,46 @@ export default {
     }
   },
   methods: {
+    curve (opts) {
+      let data = this.mappedData
+      let barw = this.barW
+      let h = this.hh
+      let x = d3.scaleLinear()
+        .range([this.barX(this.bars[0]) + barw / 2, this.barX(this.bars[this.bars.length - 1]) + barw / 2])
+      let y = d3.scaleLinear()
+        .range([h, 0])
+
+      let curve = d3.line()
+        .x((d, i) => {
+          return x(i)
+        })
+        .y((d) => {
+          return y(d)
+        })
+      // curve type
+      if (opts.type) {
+        curve.curve(this.curveType(opts.type))
+      }
+      x.domain(d3.extent(data, (d, i) => { return i }))
+      y.domain(d3.extent(data, (d) => { return d }))
+      let d = curve(data)
+      if (opts.close) d += this.closeCurve()
+      return d
+    },
+    closeCurve () {
+      let fp = this.bars[0]
+      let lp = this.bars[this.bars.length - 1]
+      let fpx = this.barX(fp) + fp.w / 2
+      let lpx = this.barX(lp) + lp.w / 2
+      let d = [
+        ' L' + lpx,
+        this.hh,
+        'L' + fpx,
+        this.hh,
+        'Z'
+      ]
+      return d.join(' ')
+    },
     createLabel (bar) {
       return this.formatLabel(bar, this.formatX, this.formatY)
     },
@@ -383,6 +397,16 @@ export default {
         this.getX = getX
       }
       this.gradientId = this.randomName('svgGrad-')
+
+      // copy curve settings to curveBack
+      let curve = this.opts.curve
+      let curveBack = this.opts.curveBack
+      if (curveBack) {
+        curveBack.type = curve.type || null
+      }
+      // sets styles
+      this.curveStyle = this.gradientStyle('curve')
+      this.curveBackStyle = this.gradientStyle('curveBack')
     },
     setFucntion (name, value) {
       let f = this.opts[name]
@@ -526,10 +550,10 @@ export default {
 .line
   stroke: alpha(black,.5)
   stroke-width: 2px
-.curve
+.curve, .curve-back
   stroke: black
   stroke-width : 3px
-  fill: none
+  fill: none 
 .curve-point
   fill:gray
   stroke: black  
