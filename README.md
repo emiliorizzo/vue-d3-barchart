@@ -19,7 +19,7 @@ npm install vue-d3-barchart --save
 
 ```xml
   ...  
-  <d3-barchart :net-nodes="nodes" :net-links="links" :options="options" />
+  <d3-barchart :data='data' :options='options'/>
   ...
 
 ```
