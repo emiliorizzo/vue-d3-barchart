@@ -562,6 +562,7 @@ export default {
   stroke-width 1px
   stroke gray
   opacity .5
-
+.chart-line
+  pointer-events none
   
 </style>
