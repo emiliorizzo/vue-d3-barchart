@@ -2,13 +2,14 @@
   "name": "vue-d3-barchart",
   "version": "0.0.18",
   "description": "Vue component to draw bar charts using d3 ",
-  "main": "dist/vue-d3-barchart.js",
+  "main": "dist/vue-d3-barchart.umd.js",
   "scripts": {
-    "build": "vue build src/vue-d3-barchart.vue --prod --lib vueD3Barchart",
-    "example": "vue build src/example/example.vue --dist example --prod -c config.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint --ext .js,.vue src",
-    "dev": "vue build src/example/example.vue -c config.js"
+    "dev": "vue-cli-service serve",
+    "example": "vue-cli-service build --dest example",
+    "build": "npm run build-component && npm run clean-dist",
+    "build-component": "vue-cli-service build --target lib --name vue-d3-barchart src/vue-d3-barchart.vue",
+    "lint": "vue-cli-service lint",
+    "clean-dist": "rm dist/demo.html"
   },
   "author": "emi",
   "license": "MIT",
@@ -28,30 +29,22 @@
     "graph",
     "component"
   ],
-  "devDependencies": {
-    "babel-eslint": "^7.2.3",
-    "babel-preset-vue-app": "^1.2.0",
-    "css-loader": "^0.28.4",
-    "eslint": "^3.19.0",
-    "eslint-config-standard": "^6.2.1",
-    "eslint-friendly-formatter": "^2.0.7",
-    "eslint-loader": "^1.7.1",
-    "eslint-plugin-env": "0.0.3",
-    "eslint-plugin-html": "^2.0.0",
-    "eslint-plugin-promise": "^3.4.0",
-    "eslint-plugin-standard": "^2.0.1",
-    "pug": "^2.0.0-rc.2",
-    "raw-loader": "^0.5.1",
-    "source-map": "^0.5.6",
-    "stylus": "^0.54.5",
-    "stylus-loader": "^3.0.1",
-    "vue-cli": "^2.9.5",
-    "vue-style-loader": "^3.0.1",
-    "webpack": "^3.2.0"
-  },
   "dependencies": {
     "d3-array": "^1.2.0",
     "d3-scale": "^1.0.6",
     "d3-shape": "^1.2.0"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "^3.0.0-rc.5",
+    "@vue/cli-plugin-eslint": "^3.0.0-rc.5",
+    "@vue/cli-service": "^3.0.0-rc.5",
+    "@vue/eslint-config-standard": "^3.0.0-rc.5",
+    "pug": "^2.0.3",
+    "pug-plain-loader": "^1.0.0",
+    "raw-loader": "^0.5.1",
+    "stylus": "^0.54.5",
+    "stylus-loader": "^3.0.2",
+    "vue": "^2.5.16",
+    "vue-template-compiler": "^2.5.16"
   }
 }

@@ -4,7 +4,7 @@
     defs(v-if='renderGradient')
       linearGradient(:id='gradientId' x1="0" x2="100%" y1="0" y2="0")
         stop(v-for='d,i in bars' :offset='d.percentX + "%"' :key='i' :stop-color='d.color')
-    
+
     //- Lines Y
     g.lines(v-if='opts.axis.linesY')
       line.line-y(v-for='a,i in axisY' :x1='margin' :x2='w' :y1='a.y' :y2='a.y' )
@@ -18,11 +18,11 @@
           text.axis-label(v-if='opts.axis.valuesY' x='0' :y='a.y' ) {{a.value}}
     //- Back Curve
     g.curve-back(v-if='opts.curveBack')
-      path(:d='curve(opts.curveBack)' :stroke='curveBackStyle.stroke' :style='curveBackStyle' :fill='curveBackStyle.fill')     
+      path(:d='curve(opts.curveBack)' :stroke='curveBackStyle.stroke' :style='curveBackStyle' :fill='curveBackStyle.fill')
     //- Bars
     g.bars
       template(v-for="d,i in bars")
-        //- visible bar  
+        //- visible bar
         rect.bar(v-if='opts.bars' :width="d.w" :height="d.y" :x='barX(d)' :y='barY(d)' :style='barStyle(d)'
           @click='barClick($event,d)')
 
@@ -33,34 +33,34 @@
     //- dummy bars to capture mouse events
     g.dummies
       template(v-for="d,i in bars")
-        rect.dummy-bar( v-if='(opts.tip || opts.line) && d.yv > 0' :width="d.w" :height="h" :x="barX(d)" y='0' 
+        rect.dummy-bar( v-if='(opts.tip || opts.line) && d.yv > 0' :width="d.w" :height="h" :x="barX(d)" y='0'
           :class='(opts.bars) ? "has-bars":""'
           @mouseover.prevent='startMove($event,d)'
-          @mouseleave='stopMove($event,d)' 
+          @mouseleave='stopMove($event,d)'
           @click='barClick($event,d)'
           @touchstart='barClick($event,d)'
           )
     //-
     //-Marks
     g(v-if='opts.marks' class="marks")
-      rect.mark(v-if='opts.marks.type === "square"' 
+      rect.mark(v-if='opts.marks.type === "square"'
         v-for="d,i in bars" :key='i' :x='barX(d) + (barW /2) - (markSize /2)' :y='barY(d)-(markSize /2)' :width='markSize' :height='markSize' :style='markStyle(d)')
       circle.mark(v-if='opts.marks.type !=="square"' v-for="d,i in bars" :key='i' :r='markSize / 2' :cx='barX(d) + barW /2' :cy='barY(d)' :style='markStyle(d)')
     //- Line
     g.chart-line(v-if="opts.line" v-show='over')
       line.line(:x1='lineX' :x2='lineX' :y1='0' :y2='h - margin')
-    
-    //- Value  
+
+    //- Value
     g.chart-tip(v-if="opts.tip && over" )
-      rect.chart-tip-back( v-if='opts.tipBack' 
-        :x='lineX + fontSize/2' :y='0' :width='labelW + "ex"' :height='label.length + .25 + "em"' 
+      rect.chart-tip-back( v-if='opts.tipBack'
+        :x='lineX + fontSize/2' :y='0' :width='labelW + "ex"' :height='label.length + .25 + "em"'
         :rx='labelW / 5' :ry='label.lenght'
         @touchstart='barClick(over)'
         )
       text.label( :x='lineX + fontSize' y='0' :font-size='fontSize')
-        tspan.label-line(v-for='txt,index in label' 
+        tspan.label-line(v-for='txt,index in label'
           :key='index' :x='lineX + fontSize' dy='1.2em' :class='"l-" + index ' ) {{txt}}
-      
+
 </template>
 <script>
 import * as d3array from 'd3-array'
@@ -520,7 +520,6 @@ export default {
   fill: cyan
   stroke: none
 
-
 .dummy-bar
   fill: none
   stroke: none
@@ -543,7 +542,7 @@ export default {
 .axis
   stroke-width: 1px
   stroke: gray
-.axis-label 
+.axis-label
   fill: gray
   stroke: none
   font-size: 8px
@@ -553,10 +552,10 @@ export default {
 .curve, .curve-back
   stroke: black
   stroke-width : 3px
-  fill: none 
+  fill: none
 .curve-point
   fill:gray
-  stroke: black  
+  stroke: black
 .chart-tip-back
   fill: black
   stroke-width 1px
@@ -564,5 +563,5 @@ export default {
   opacity .5
 .chart-line
   pointer-events none
-  
+
 </style>

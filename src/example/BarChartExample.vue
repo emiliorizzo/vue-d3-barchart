@@ -1,7 +1,7 @@
 <template lang="pug">
   .chart
     d3-barchart(:data='chartData' :options='options')
-    d3-barchart(:data='chartData2' :options='options')  
+    d3-barchart(:data='chartData2' :options='options')
 </template>
 <script>
 import d3Barchart from '../vue-d3-barchart.vue'

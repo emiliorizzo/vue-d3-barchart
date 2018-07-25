@@ -1,5 +1,5 @@
 <template lang="pug">
-  #app      
+  #app
     bar-chart-example
     .menu-container
       //- Menu
@@ -15,9 +15,8 @@
 
 </template>
 
-
 <script>
-import ghIcon from '!!raw-loader!../assets/github.svg'
+import ghIcon from '../assets/github.svg?raw'
 import BarChartExample from './BarChartExample.vue'
 
 export default {
@@ -30,7 +29,7 @@ export default {
       icons: {
         gitHub: ghIcon
       },
-      app: APP
+      app: process.env.APP
     }
   }
 }
@@ -38,11 +37,11 @@ export default {
 <style lang="stylus">
 @import '../vars.styl'
 @import './html.styl'
-  body 
+  body
     font-family: 'Asap', sans-serif
     color: $darkness
   #app
-    user-select: none  
+    user-select: none
   .menu-container
     position:fixed
     bottom: 0
@@ -68,8 +67,8 @@ export default {
       .title
         border: 1.5px $lightness
         border-style: dotted none
-        padding: .5em 0 
-      
+        padding: .5em 0
+
       h1, h2
         margin:0 0 .5em 0
       h1
@@ -81,8 +80,8 @@ export default {
       h2
         font-size: 0.8em
         font-style: italic
-       letter-spacing: 0.0625em 
-  
+       letter-spacing: 0.0625em
+
   .links
     margin: 1em 5em 0 0
     position: absolute
@@ -90,7 +89,7 @@ export default {
     top: 0
     right: 0
 
-  .icon      
+  .icon
     svg
       padding: 0.1em
       background-color: white
@@ -99,8 +98,7 @@ export default {
       width: 3em
       height: 3em
       fill: $color
-  
-  
+
   .console
     display: block
     max-width: 20em
@@ -110,6 +108,4 @@ export default {
     bottom: 0
     color: $dark
 
-
 </style>
-
