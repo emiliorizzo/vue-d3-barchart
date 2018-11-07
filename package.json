@@ -35,10 +35,10 @@
     "d3-shape": "^1.2.0"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^3.0.0-rc.5",
-    "@vue/cli-plugin-eslint": "^3.0.0-rc.5",
-    "@vue/cli-service": "^3.0.0-rc.5",
-    "@vue/eslint-config-standard": "^3.0.0-rc.5",
+    "@vue/cli-plugin-babel": "^3.0.0-rc.8",
+    "@vue/cli-plugin-eslint": "^3.0.0-rc.8",
+    "@vue/cli-service": "^3.0.0-rc.8",
+    "@vue/eslint-config-standard": "^3.0.0-rc.8",
     "pug": "^2.0.3",
     "pug-plain-loader": "^1.0.0",
     "raw-loader": "^0.5.1",
