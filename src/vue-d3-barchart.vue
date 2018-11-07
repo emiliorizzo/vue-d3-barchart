@@ -190,7 +190,8 @@ export default {
       return (bars && bars.gradient) || (curve && curve.gradient) || (curveBack && curveBack.gradient)
     },
     colors () {
-      if (this.opts.colorFunc) return this.opts.colorFunc
+      let colorCb = this.opts.colorCb
+      if (colorCb && typeof colorCb === 'function') return colorCb
       let colors = (d) => { return 'red' }
       // color with interpolator
       if (this.colorInterpol) {
@@ -245,7 +246,7 @@ export default {
           yv: d,
           x: this.scaleX(i),
           y: this.scaleY(d) + 1,
-          color: this.colors(d),
+          color: this.colors(d, this.data[i]),
           percentX: parseInt(this.percentX(i)),
           percentY: parseInt(this.percentY(d)),
           w: this.scaleX.bandwidth(),
@@ -511,57 +512,66 @@ export default {
 }
 </script>
 <style lang="stylus">
-.d3-bar-chart
-  max-height: 100%
-  max-width 100%
-  svg
-    overflow: visible
-.bar
-  fill: cyan
-  stroke: none
+  .d3-bar-chart
+    max-height 100%
+    max-width 100%
 
-.dummy-bar
-  fill: none
-  stroke: none
-  pointer-events: all
+    svg
+      overflow visible
 
-.dummy-bar.has-bars
-  &:hover
-    fill: alpha(black,.1)
+  .bar
+    fill cyan
+    stroke none
 
-.bar-text
-  fill: gray
+  .dummy-bar
+    fill none
+    stroke none
+    pointer-events all
 
-.rulers
-  stroke-width: 1px
-  stroke: black
-.lines
-  stroke gray
-  stroke-width 1px
-  stroke-opacity .3
-.axis
-  stroke-width: 1px
-  stroke: gray
-.axis-label
-  fill: gray
-  stroke: none
-  font-size: 8px
-.line
-  stroke: alpha(black,.5)
-  stroke-width: 2px
-.curve, .curve-back
-  stroke: black
-  stroke-width : 3px
-  fill: none
-.curve-point
-  fill:gray
-  stroke: black
-.chart-tip-back
-  fill: black
-  stroke-width 1px
-  stroke gray
-  opacity .5
-.chart-line
-  pointer-events none
+  .dummy-bar.has-bars
+    &:hover
+      fill alpha(black, 0.1)
 
+  .bar-text
+    fill gray
+
+  .rulers
+    stroke-width 1px
+    stroke black
+
+  .lines
+    stroke gray
+    stroke-width 1px
+    stroke-opacity 0.3
+
+  .axis
+    stroke-width 1px
+    stroke gray
+
+  .axis-label
+    fill gray
+    stroke none
+    font-size 8px
+
+  .line
+    stroke alpha(black, 0.5)
+    stroke-width 2px
+
+  .curve, .curve-back
+    stroke black
+    stroke-width 3px
+    fill none
+
+  .curve-point
+    fill gray
+    stroke black
+
+  .chart-tip-back
+    fill black
+    stroke-width 1px
+    stroke gray
+    opacity 0.5
+
+  .chart-line
+    pointer-events none
 </style>

@@ -66,7 +66,7 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
   - **colorInterpol**: Function | name of D3 function 
   - **colorScale**: Function | name of D3 function 
       *(colorInterpol Overrides this option)*
-  - **colorFunc**: Color Function: (d) => {return color}, *Overrides colorScale and colorInterpol*
+  - **colorCb**: Color Function: (x,d) => {return color}, *Overrides colorScale and colorInterpol*
   
   - **line**: Boolean
     render line
