@@ -58,8 +58,8 @@
         @touchstart='barClick(over)'
         )
       text.label( :x='lineX + fontSize' y='0' :font-size='fontSize')
-        tspan.label-line(v-for='txt,index in label'
-          :key='index' :x='lineX + fontSize' dy='1.2em' :class='"l-" + index ' ) {{txt}}
+        tspan.label-line(v-for='line,index in label'
+          :key='index' :x='lineX + fontSize' dy='1.2em' :class='line.css' :style='line.style') {{line.txt}}
 
 </template>
 <script>
@@ -367,7 +367,14 @@ export default {
       return d.join(' ')
     },
     createLabel (bar) {
-      return this.formatLabel(bar, this.formatX, this.formatY)
+      let label = this.formatLabel(bar, this.formatX, this.formatY)
+      return label.map((v, i) => {
+        let style = v.style || {}
+        let css = v.css || []
+        css.push(`l-${i}`)
+        let txt = v.txt || v
+        return { style, css, txt, i }
+      })
     },
     init () {
       let opts = this.opts

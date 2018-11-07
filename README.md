@@ -47,7 +47,7 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
   - **data**: Array of values or objects *(see options: getX,getY)*
 
 - **options**:
-- 
+  
   - **size**:{w,h} 
   - **getX**: function(d)
   - **getY**: function(d)
@@ -73,7 +73,7 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
   
   - **formatX**: Function(x) --> x
   - **formatY**: Function(y) --> y
-  - **formatLabel**(d, formatX, formatY) -> Array, one value per line
+  - **formatLabel**(d, formatX, formatY) -> <Array> , one value per line: **String | Object**: {style,css,txt}
 
 *default:*
 ```javasctipt
