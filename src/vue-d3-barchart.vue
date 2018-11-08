@@ -33,7 +33,7 @@
     //- dummy bars to capture mouse events
     g.dummies
       template(v-for="d,i in bars")
-        rect.dummy-bar( v-if='(opts.tip || opts.line) && d.yv > 0' :width="d.w" :height="h" :x="barX(d)" y='0'
+        rect.dummy-bar( v-if='(opts.tip || opts.line)' :width="d.w" :height="h" :x="barX(d)" y='0'
           :class='(opts.bars) ? "has-bars":""'
           @mouseover.prevent='startMove($event,d)'
           @mouseleave='stopMove($event,d)'
