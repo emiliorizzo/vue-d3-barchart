@@ -330,10 +330,11 @@ export default {
       let data = this.mappedData
       let barw = this.barW
       let h = this.hh
+      let offsetY = d3.min(data) - this.min
       let x = d3.scaleLinear()
         .range([this.barX(this.bars[0]) + barw / 2, this.barX(this.bars[this.bars.length - 1]) + barw / 2])
       let y = d3.scaleLinear()
-        .range([h, 0])
+        .range([h, offsetY])
 
       let curve = d3.line()
         .x((d, i) => {
