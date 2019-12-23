@@ -206,7 +206,7 @@ export default {
         let domain = [this.max, this.min]
         if (Array.isArray(uColors)) {
           range = uColors
-        } else if (typeof (uColors) === 'object') {
+        } else if (typeof uColors === 'object') {
           range = Object.values(uColors)
           domain = Object.keys(uColors)
         }
@@ -397,12 +397,12 @@ export default {
 
       // Y get / format
       let getY = options.getY
-      if (getY && typeof (getY) === 'function') {
+      if (getY && typeof getY === 'function') {
         this.getY = getY
       }
       // X get / format
       let getX = options.getX
-      if (getX && typeof (getX) === 'function') {
+      if (getX && typeof getX === 'function') {
         this.getX = getX
       }
       this.gradientId = this.randomName('svgGrad-')
@@ -420,10 +420,10 @@ export default {
     setFucntion (name, value) {
       let f = this.opts[name]
       if (f) {
-        if (typeof (f) === 'function') {
+        if (typeof f === 'function') {
           this[name] = f
         } else {
-          if (typeof (d3[f]) === 'function') {
+          if (typeof d3[f] === 'function') {
             this[name] = d3[f]
           }
         }
@@ -481,13 +481,13 @@ export default {
     },
     curveType (type) {
       if (type) {
-        if (typeof (type) === 'function') return type
+        if (typeof type === 'function') return type
         // ex Linear
         let func = d3['curve' + type]
-        if (typeof (func) === 'function') return func
+        if (typeof func === 'function') return func
         // ex curveLinear
         func = d3[type]
-        if (typeof (func) === 'function') return func
+        if (typeof func === 'function') return func
       }
       return d3.curveMonotoneX
     },
