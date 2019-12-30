@@ -162,11 +162,16 @@ export default {
     }
   },
   computed: {
+    xMax () {
+      return (this.getX) ? d3.max(this.xValues) : this.dataCount
+    },
     scaleX () {
+      let { xMax, ww } = this
+      let { padding } = this.opts
       return d3.scaleBand()
-        .domain(d3.range(this.mappedData.length))
-        .paddingInner(this.opts.padding)
-        .rangeRound([0, this.ww])
+        .domain(d3.range(0, xMax + 1))
+        .paddingInner(padding)
+        .rangeRound([0, ww])
     },
     scaleY () {
       return d3.scaleLinear()
@@ -175,7 +180,7 @@ export default {
     },
     percentX () {
       return d3.scaleLinear()
-        .domain([0, this.mappedData.length - 1])
+        .domain([0, this.dataCount - 1])
         .range([0, 100])
     },
     percentY () {
@@ -240,17 +245,19 @@ export default {
       return axis
     },
     bars () {
+      let { scaleX, scaleY, percentX, percentY, colors } = this
       return this.mappedData.map((d, i) => {
+        let { x, y } = d
         return {
-          xv: i,
-          yv: d,
-          x: this.scaleX(i),
-          y: this.scaleY(d) + 1,
-          color: this.colors(d, this.data[i]),
-          percentX: parseInt(this.percentX(i)),
-          percentY: parseInt(this.percentY(d)),
-          w: this.scaleX.bandwidth(),
-          d: this.data[i]
+          d,
+          xv: x,
+          yv: y,
+          x: scaleX(x),
+          y: scaleY(y) + 1,
+          color: colors(y, d),
+          percentX: parseInt(percentX(x)),
+          percentY: parseInt(percentY(y)),
+          w: scaleX.bandwidth()
         }
       })
     },
@@ -282,19 +289,29 @@ export default {
     },
     min () {
       let dom = this.opts.domain
-      let data = this.mappedData
-      return (dom.min === null) ? d3.min(data) : dom.min
+      let { yValues } = this
+      return (dom.min === null) ? d3.min(yValues) : dom.min
     },
     max () {
       let dom = this.opts.domain
-      let data = this.mappedData
-      return (dom.max === null) ? d3.max(data) : dom.max
+      let { yValues } = this
+      return (dom.max === null) ? d3.max(yValues) : dom.max
     },
     mappedData () {
-      let data = this.data.map((d) => {
-        return this.getY(d)
+      return this.data.map((d, i) => {
+        let y = this.getY(d)
+        let x = (this.getX) ? this.getX(d) : i
+        return { x, y, d }
       })
-      return data
+    },
+    yValues () {
+      return this.mappedData.map(d => d.y)
+    },
+    xValues () {
+      return this.mappedData.map(d => d.x)
+    },
+    dataCount () {
+      return this.mappedData.length
     },
     fontSize () {
       return this.opts.fontSize
@@ -327,28 +344,28 @@ export default {
   },
   methods: {
     curve (opts) {
-      let data = this.mappedData
+      let data = this.bars
       let barw = this.barW
       let h = this.hh
-      let offsetY = d3.min(data) - this.min
+      let offsetY = d3.min(this.yValues) - this.min
       let x = d3.scaleLinear()
-        .range([this.barX(this.bars[0]) + barw / 2, this.barX(this.bars[this.bars.length - 1]) + barw / 2])
+        .range([this.barX(data[0]) + barw / 2, this.barX(data[data.length - 1]) + barw / 2])
       let y = d3.scaleLinear()
         .range([h, offsetY])
 
       let curve = d3.line()
-        .x((d, i) => {
-          return x(i)
+        .x((d) => {
+          return x(d.x)
         })
         .y((d) => {
-          return y(d)
+          return y(d.y)
         })
       // curve type
       if (opts.type) {
         curve.curve(this.curveType(opts.type))
       }
-      x.domain(d3.extent(data, (d, i) => { return i }))
-      y.domain(d3.extent(data, (d) => { return d }))
+      x.domain(d3.extent(data, (d) => { return d.x }))
+      y.domain(d3.extent(data, (d) => { return d.y }))
       let d = curve(data)
       if (opts.close) d += this.closeCurve()
       return d
@@ -459,7 +476,8 @@ export default {
       return style
     },
     barX (d) {
-      let x = d.x + this.margin
+      let { x } = d
+      x += this.margin
       return x
       // return (x > -1) ? x : 0
     },
