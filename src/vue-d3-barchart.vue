@@ -288,14 +288,14 @@ export default {
       return 5
     },
     min () {
-      let dom = this.opts.domain
+      let { min } = this.opts.domain
       let { yValues } = this
-      return (dom.min === null) ? d3.min(yValues) : dom.min
+      return (min === null || min === undefined) ? d3.min(yValues) : min
     },
     max () {
-      let dom = this.opts.domain
+      let { max } = this.opts.domain
       let { yValues } = this
-      return (dom.max === null) ? d3.max(yValues) : dom.max
+      return (max === null || max === undefined) ? d3.max(yValues) : max
     },
     mappedData () {
       return this.data.map((d, i) => {
