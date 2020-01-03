@@ -1,17 +1,18 @@
 {
   "name": "vue-d3-barchart",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "description": "Vue component to draw bar charts using d3 ",
   "author": "emi",
   "scripts": {
-    "build": "npm run build-component && npm run clean-dist",
+    "build": "npm run lint && npm run clean && npm run build-component && npm run clean-dist",
     "lint": "npx vue-cli-service lint",
-    "build-component": "npx vue-cli-service build --target lib --name vue-d3-barchart src/vue-d3-barchart.vue",
+    "clean": "rm -rf ./dist",
+    "build-component": "npx vue-cli-service build --target lib src/vue-d3-barchart.vue",
     "clean-dist": "rm dist/demo.html",
     "dev": "npx vue-cli-service serve",
     "example": "npx vue-cli-service build --dest example"
   },
-  "main": "dist/vue-d3-barchart.umd.js",
+  "main": "dist/vue-d3-barchart.common.js",
   "dependencies": {
     "d3-array": "^1.2.0",
     "d3-scale": "^1.0.6",
