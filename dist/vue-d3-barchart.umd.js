@@ -2955,12 +2955,12 @@ if (typeof window !== 'undefined') {
 // Indicate to webpack that this file can be concatenated
 /* harmony default export */ var setPublicPath = (null);
 
-// CONCATENATED MODULE: ./node_modules/cache-loader/dist/cjs.js?{"cacheDirectory":"node_modules/.cache/vue-loader","cacheIdentifier":"3db38f17-vue-loader-template"}!./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/pug-plain-loader!./node_modules/cache-loader/dist/cjs.js??ref--0-0!./node_modules/vue-loader/lib??vue-loader-options!./src/vue-d3-barchart.vue?vue&type=template&id=1eb9ac7e&lang=pug&
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return (_vm.bars.length)?_c('svg',{staticClass:"d3-bar-chart",attrs:{"width":_vm.w,"height":_vm.h}},[(_vm.renderGradient)?_c('defs',[_c('linearGradient',{attrs:{"id":_vm.gradientId,"x1":"0","x2":"100%","y1":"0","y2":"0"}},_vm._l((_vm.bars),function(d,i){return _c('stop',{key:i,attrs:{"offset":d.percentX + "%","stop-color":d.color}})}))],1):_vm._e(),(_vm.opts.axis.linesY)?_c('g',{staticClass:"lines"},_vm._l((_vm.axisY),function(a,i){return _c('line',{staticClass:"line-y",attrs:{"x1":_vm.margin,"x2":_vm.w,"y1":a.y,"y2":a.y}})})):_vm._e(),(_vm.opts.axis)?_c('g',{staticClass:"axis"},[_c('line',{staticClass:"x-axis",attrs:{"x1":_vm.oX,"x2":_vm.w,"y1":_vm.hh,"y2":_vm.hh}}),_c('line',{staticClass:"y-axis",attrs:{"x1":_vm.oX,"x2":_vm.oX,"y1":"0","y2":_vm.hh}}),_c('g',{staticClass:"axis-labels"},[_vm._l((_vm.axisY),function(a,i){return [(_vm.opts.axis.valuesY)?_c('text',{staticClass:"axis-label",attrs:{"x":"0","y":a.y}},[_vm._v(_vm._s(a.value))]):_vm._e()]})],2)]):_vm._e(),(_vm.opts.curveBack)?_c('g',{staticClass:"curve-back"},[_c('path',{style:(_vm.curveBackStyle),attrs:{"d":_vm.curve(_vm.opts.curveBack),"stroke":_vm.curveBackStyle.stroke,"fill":_vm.curveBackStyle.fill}})]):_vm._e(),_c('g',{staticClass:"bars"},[_vm._l((_vm.bars),function(d,i){return [(_vm.opts.bars)?_c('rect',{staticClass:"bar",style:(_vm.barStyle(d)),attrs:{"width":d.w,"height":d.y,"x":_vm.barX(d),"y":_vm.barY(d)},on:{"click":function($event){_vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.curve)?_c('g',{staticClass:"curve"},[_c('path',{style:(_vm.curveStyle),attrs:{"d":_vm.curve(_vm.opts.curve),"stroke":_vm.curveStyle.stroke,"fill":_vm.curveStyle.fill}})]):_vm._e(),_c('g',{staticClass:"dummies"},[_vm._l((_vm.bars),function(d,i){return [((_vm.opts.tip || _vm.opts.line))?_c('rect',{staticClass:"dummy-bar",class:(_vm.opts.bars) ? "has-bars":"",attrs:{"width":d.w,"height":_vm.h,"x":_vm.barX(d),"y":"0"},on:{"mouseover":function($event){$event.preventDefault();_vm.startMove($event,d)},"mouseleave":function($event){_vm.stopMove($event,d)},"click":function($event){_vm.barClick($event,d)},"touchstart":function($event){_vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.marks)?_c('g',{staticClass:"marks"},[_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type === "square")?_c('rect',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"x":_vm.barX(d) + (_vm.barW /2) - (_vm.markSize /2),"y":_vm.barY(d)-(_vm.markSize /2),"width":_vm.markSize,"height":_vm.markSize}}):_vm._e()}),_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type !=="square")?_c('circle',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"r":_vm.markSize / 2,"cx":_vm.barX(d) + _vm.barW /2,"cy":_vm.barY(d)}}):_vm._e()})],2):_vm._e(),(_vm.opts.line)?_c('g',{directives:[{name:"show",rawName:"v-show",value:(_vm.over),expression:"over"}],staticClass:"chart-line"},[_c('line',{staticClass:"line",attrs:{"x1":_vm.lineX,"x2":_vm.lineX,"y1":0,"y2":_vm.h - _vm.margin}})]):_vm._e(),(_vm.opts.tip && _vm.over)?_c('g',{staticClass:"chart-tip"},[(_vm.opts.tipBack)?_c('rect',{staticClass:"chart-tip-back",attrs:{"x":_vm.lineX + _vm.fontSize/2,"y":0,"width":_vm.labelW + "ex","height":_vm.label.length + .25 + "em","rx":_vm.labelW / 5,"ry":_vm.label.lenght},on:{"touchstart":function($event){_vm.barClick(_vm.over)}}}):_vm._e(),_c('text',{staticClass:"label",attrs:{"x":_vm.lineX + _vm.fontSize,"y":"0","font-size":_vm.fontSize}},_vm._l((_vm.label),function(line,index){return _c('tspan',{key:index,staticClass:"label-line",class:line.css,style:(line.style),attrs:{"x":_vm.lineX + _vm.fontSize,"dy":"1.2em"}},[_vm._v(_vm._s(line.txt))])}))]):_vm._e()]):_vm._e()}
+// CONCATENATED MODULE: ./node_modules/cache-loader/dist/cjs.js?{"cacheDirectory":"node_modules/.cache/vue-loader","cacheIdentifier":"7e5fe606-vue-loader-template"}!./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/pug-plain-loader!./node_modules/cache-loader/dist/cjs.js??ref--0-0!./node_modules/vue-loader/lib??vue-loader-options!./src/vue-d3-barchart.vue?vue&type=template&id=354eeaee&lang=pug&
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return (_vm.bars.length)?_c('svg',{staticClass:"d3-bar-chart",attrs:{"width":_vm.w,"height":_vm.h}},[(_vm.renderGradient)?_c('defs',[_c('linearGradient',{attrs:{"id":_vm.gradientId,"x1":"0","x2":"100%","y1":"0","y2":"0"}},_vm._l((_vm.bars),function(d,i){return _c('stop',{key:i,attrs:{"offset":d.percentX + "%","stop-color":d.color}})}))],1):_vm._e(),(_vm.opts.axis.linesY)?_c('g',{staticClass:"lines"},_vm._l((_vm.axisY),function(a,i){return _c('line',{staticClass:"line-y",attrs:{"x1":_vm.margin,"x2":_vm.w,"y1":a.y,"y2":a.y}})})):_vm._e(),(_vm.opts.axis)?_c('g',{staticClass:"axis"},[_c('line',{staticClass:"x-axis",attrs:{"x1":_vm.oXa,"x2":_vm.w,"y1":_vm.hh,"y2":_vm.hh}}),_c('line',{staticClass:"y-axis",attrs:{"x1":_vm.oXa,"x2":_vm.oXa,"y1":"0","y2":_vm.hh}}),_c('g',{staticClass:"axis-labels"},[_vm._l((_vm.axisY),function(a,i){return [(_vm.opts.axis.valuesY)?_c('text',{staticClass:"axis-label",attrs:{"x":"0","y":a.y}},[_vm._v(_vm._s(a.value))]):_vm._e()]})],2)]):_vm._e(),(_vm.opts.curveBack)?_c('g',{staticClass:"curve-back"},[_c('path',{style:(_vm.curveBackStyle),attrs:{"d":_vm.curve(_vm.opts.curveBack),"stroke":_vm.curveBackStyle.stroke,"fill":_vm.curveBackStyle.fill}})]):_vm._e(),_c('g',{staticClass:"bars"},[_vm._l((_vm.bars),function(d,i){return [(_vm.opts.bars)?_c('rect',{staticClass:"bar",style:(_vm.barStyle(d)),attrs:{"width":d.w,"height":d.y,"x":_vm.barX(d),"y":_vm.barY(d)},on:{"click":function($event){_vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.curve)?_c('g',{staticClass:"curve"},[_c('path',{style:(_vm.curveStyle),attrs:{"d":_vm.curve(_vm.opts.curve),"stroke":_vm.curveStyle.stroke,"fill":_vm.curveStyle.fill}})]):_vm._e(),_c('g',{staticClass:"dummies"},[_vm._l((_vm.bars),function(d,i){return [((_vm.opts.tip || _vm.opts.line))?_c('rect',{staticClass:"dummy-bar",class:(_vm.opts.bars) ? "has-bars":"",attrs:{"width":d.w,"height":_vm.h,"x":_vm.barX(d),"y":"0"},on:{"mouseover":function($event){$event.preventDefault();_vm.startMove($event,d)},"mouseleave":function($event){_vm.stopMove($event,d)},"click":function($event){_vm.barClick($event,d)},"touchstart":function($event){_vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.marks)?_c('g',{staticClass:"marks"},[_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type === "square")?_c('rect',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"x":_vm.barX(d) + (_vm.barW /2) - (_vm.markSize /2),"y":_vm.barY(d)-(_vm.markSize /2),"width":_vm.markSize,"height":_vm.markSize}}):_vm._e()}),_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type !=="square")?_c('circle',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"r":_vm.markSize / 2,"cx":_vm.barX(d) + _vm.barW /2,"cy":_vm.barY(d)}}):_vm._e()})],2):_vm._e(),(_vm.opts.line)?_c('g',{directives:[{name:"show",rawName:"v-show",value:(_vm.over),expression:"over"}],staticClass:"chart-line"},[_c('line',{staticClass:"line",attrs:{"x1":_vm.lineX,"x2":_vm.lineX,"y1":0,"y2":_vm.h - _vm.margin}})]):_vm._e(),(_vm.opts.tip && _vm.over)?_c('g',{staticClass:"chart-tip"},[(_vm.opts.tipBack)?_c('rect',{staticClass:"chart-tip-back",attrs:{"x":_vm.lineX + _vm.fontSize/2,"y":0,"width":_vm.labelW + "ex","height":_vm.label.length + .25 + "em","rx":_vm.labelW / 5,"ry":_vm.label.lenght},on:{"touchstart":function($event){_vm.barClick(_vm.over)}}}):_vm._e(),_c('text',{staticClass:"label",attrs:{"x":_vm.lineX + _vm.fontSize,"y":"0","font-size":_vm.fontSize}},_vm._l((_vm.label),function(line,index){return _c('tspan',{key:index,staticClass:"label-line",class:line.css,style:(line.style),attrs:{"x":_vm.lineX + _vm.fontSize,"dy":"1.2em"}},[_vm._v(_vm._s(line.txt))])}))]):_vm._e()]):_vm._e()}
 var staticRenderFns = []
 
 
-// CONCATENATED MODULE: ./src/vue-d3-barchart.vue?vue&type=template&id=1eb9ac7e&lang=pug&
+// CONCATENATED MODULE: ./src/vue-d3-barchart.vue?vue&type=template&id=354eeaee&lang=pug&
 
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.array.fill.js
 var es_array_fill = __webpack_require__("cb29");
@@ -9740,6 +9740,55 @@ function ascending_sum(series) {
 
 
 
+// CONCATENATED MODULE: ./src/defaultOptions.js
+/* harmony default export */ var defaultOptions = ({
+  labels: {
+    x: false,
+    y: false
+  },
+  // render labels
+  axis: false,
+  // render axis
+  padding: 0.1,
+  // bar padding
+  colors: ['orangered', 'lightgreen'],
+  // colors [max, min] or null
+  colorInterpol: null,
+  // color Interpolator
+  getY: null,
+  // function to get / format Y value
+  getX: null,
+  // function to get / format X value
+  line: true,
+  // render value line
+  xUnits: '',
+  // x  suffix
+  yUnits: '',
+  //  y suffix
+  domain: {
+    min: null,
+    max: null
+  },
+  // graph domain, nulls are evaluated as default
+  marks: {
+    type: 'point',
+    size: 10,
+    style: null
+  },
+  curve: null,
+  debug: false,
+  axisTicks: 5,
+  bars: {
+    gradient: false
+  },
+  tip: true,
+  fontSize: 10,
+  tipBack: true,
+  autoSize: {
+    w: 180,
+    h: 60
+  }
+});
 // CONCATENATED MODULE: ./node_modules/cache-loader/dist/cjs.js??ref--12-0!./node_modules/babel-loader/lib!./node_modules/cache-loader/dist/cjs.js??ref--0-0!./node_modules/vue-loader/lib??vue-loader-options!./src/vue-d3-barchart.vue?vue&type=script&lang=js&
 
 
@@ -9818,55 +9867,8 @@ function ascending_sum(series) {
 
 
 
+
 var d3 = Object.assign({}, d3_array_namespaceObject, d3_scale_namespaceObject, d3_shape_namespaceObject);
-var defaultOptions = {
-  labels: {
-    x: false,
-    y: false
-  },
-  // render labels
-  axis: false,
-  // render axis
-  padding: 0.1,
-  // bar padding
-  colors: ['orangered', 'lightgreen'],
-  // colors [max, min] or null
-  colorInterpol: null,
-  // color Interpolator
-  getY: null,
-  // function to get / format Y value
-  getX: null,
-  // function to get / format X value
-  line: true,
-  // render value line
-  xUnits: '',
-  // x  suffix
-  yUnits: '',
-  //  y suffix
-  domain: {
-    min: null,
-    max: null
-  },
-  // graph domain, nulls are evaluated as default
-  marks: {
-    type: 'point',
-    size: 10,
-    style: null
-  },
-  curve: null,
-  debug: false,
-  axisTicks: 5,
-  bars: {
-    gradient: false
-  },
-  tip: true,
-  fontSize: 10,
-  tipBack: true,
-  autoSize: {
-    w: 180,
-    h: 60
-  }
-};
 /* harmony default export */ var vue_d3_barchartvue_type_script_lang_js_ = ({
   name: 'D3-bar-chart',
   props: {
@@ -10001,15 +10003,16 @@ var defaultOptions = {
           percentX = this.percentX,
           percentY = this.percentY,
           colors = this.colors;
-      return this.mappedData.map(function (d, i) {
-        var x = d.x,
-            y = d.y;
+      return this.mappedData.map(function (m, i) {
+        var x = m.x,
+            y = m.y,
+            d = m.d;
         return {
           d: d,
           xv: x,
           yv: y,
           x: scaleX(x),
-          y: scaleY(y) + 1,
+          y: scaleY(y),
           color: colors(y, d),
           percentX: parseInt(percentX(x)),
           percentY: parseInt(percentY(y)),
@@ -10017,14 +10020,18 @@ var defaultOptions = {
         };
       });
     },
+    oXa: function oXa() {
+      return this.margin;
+    },
     oX: function oX() {
-      return this.margin + this.barW / 2;
+      var barW = this.barW;
+      return this.oXa + barW / 2;
     },
     oY: function oY() {
       return this.margin / 2;
     },
     hh: function hh() {
-      return this.h - this.margin / 2;
+      return this.h - this.oY;
     },
     ww: function ww() {
       return this.w - this.margin;
@@ -10110,28 +10117,21 @@ var defaultOptions = {
   },
   methods: {
     curve: function curve(opts) {
+      var _this2 = this;
+
       var data = this.bars;
       var barw = this.barW;
-      var h = this.hh;
-      var offsetY = d3.min(this.yValues) - this.min;
-      var x = d3.scaleLinear().range([this.barX(data[0]) + barw / 2, this.barX(data[data.length - 1]) + barw / 2]);
-      var y = d3.scaleLinear().range([h, offsetY]);
+      var b = barw / 2;
       var curve = d3.line().x(function (d) {
-        return x(d.x);
+        return _this2.barX(d) + b;
       }).y(function (d) {
-        return y(d.y);
+        return _this2.barY(d);
       }); // curve type
 
       if (opts.type) {
         curve.curve(this.curveType(opts.type));
       }
 
-      x.domain(d3.extent(data, function (d) {
-        return d.x;
-      }));
-      y.domain(d3.extent(data, function (d) {
-        return d.y;
-      }));
       var d = curve(data);
       if (opts.close) d += this.closeCurve();
       return d;
@@ -10228,7 +10228,8 @@ var defaultOptions = {
       } else {
         w = this.options.size.w;
         h = this.options.size.h;
-      }
+      } // review autosize
+
 
       this.w = w > 0 ? w : this.opts.autoSize.w;
       this.h = h > 0 ? h : this.opts.autoSize.h;
