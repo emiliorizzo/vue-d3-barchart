@@ -188,6 +188,7 @@ export default {
       }
       return colors
     },
+
     axisY () {
       let ticks = this.opts.axisTicks
       ticks = (ticks <= this.max) ? ticks : this.max
@@ -220,7 +221,7 @@ export default {
           xv: x,
           yv: y,
           x: scaleX(x),
-          y: scaleY(y) + 1,
+          y: scaleY(y),
           color: colors(y, d),
           percentX: parseInt(percentX(x)),
           percentY: parseInt(percentY(y)),
@@ -229,12 +230,11 @@ export default {
       })
     },
     oXa () {
-      let { barW, oX } = this
-      return oX - barW / 2
+      return this.margin
     },
     oX () {
-      let { margin, barW } = this
-      return margin + (barW / 2)
+      let { barW } = this
+      return this.oXa + (barW / 2)
     },
     oY () {
       return this.margin / 2
@@ -318,26 +318,18 @@ export default {
     curve (opts) {
       let data = this.bars
       let barw = this.barW
-      let h = this.hh
-      let offsetY = d3.min(this.yValues) - this.min
-      let x = d3.scaleLinear()
-        .range([this.barX(data[0]) + barw / 2, this.barX(data[data.length - 1]) + barw / 2])
-      let y = d3.scaleLinear()
-        .range([h, offsetY])
-
+      let b = barw / 2
       let curve = d3.line()
         .x((d) => {
-          return x(d.x)
+          return this.barX(d) + b
         })
         .y((d) => {
-          return y(d.y)
+          return this.barY(d)
         })
       // curve type
       if (opts.type) {
         curve.curve(this.curveType(opts.type))
       }
-      x.domain(d3.extent(data, (d) => { return d.x }))
-      y.domain(d3.extent(data, (d) => { return d.y }))
       let d = curve(data)
       if (opts.close) d += this.closeCurve()
       return d
@@ -427,6 +419,7 @@ export default {
         w = this.options.size.w
         h = this.options.size.h
       }
+      // review autosize
       this.w = (w > 0) ? w : this.opts.autoSize.w
       this.h = (h > 0) ? h : this.opts.autoSize.h
     },
@@ -513,9 +506,7 @@ export default {
   .d3-bar-chart
     max-height 100%
     max-width 100%
-
-    svg
-      overflow visible
+    overflow visible
 
   .bar
     fill cyan
@@ -563,6 +554,10 @@ export default {
   .curve-point
     fill gray
     stroke black
+
+  .chart-tip
+    stroke none
+    fill gray
 
   .chart-tip-back
     fill black
