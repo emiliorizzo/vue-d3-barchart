@@ -2,7 +2,9 @@
 [![GitHub issues](https://img.shields.io/github/issues/emiliorizzo/vue-d3-barchart.svg)](https://github.com/emiliorizzo/vue-d3-barchart/issues) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/emiliorizzo/vue-d3-barchart/master/LICENSE) [![npm](https://img.shields.io/npm/v/vue-d3-barchart.svg)](https://www.npmjs.com/package/vue-d3-barchart)
 
 ## vue-d3-barchart 
- > Vue component to draw bar charts using d3 v4
+ > Small component to draw charts using d3 v4
+
+ ![vue d3 barchart](vue-d3-barchart.png)
 
 ## Demo
 
@@ -103,6 +105,8 @@ See: [package.json](https://github.com/emiliorizzo/vue-d3-barchart/blob/master/p
   
   - **marks**: Boolean | Object: {type: point | square  style:{ fill , stroke }, size }
 
+- **domain** Object: {max:[number],min:[number]
+    The domain values  are auto calculated from data, but for example,if you want a chart that start from zero you can pass the domain option as: {min:0}
 
 ## d object
  
