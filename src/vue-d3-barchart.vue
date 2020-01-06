@@ -10,8 +10,8 @@
       line.line-y(v-for='a,i in axisY' :x1='margin' :x2='w' :y1='a.y' :y2='a.y' )
     //- Axis
     g.axis(v-if='opts.axis')
-      line.x-axis(:x1='oX' :x2='w' :y1='hh' :y2='hh')
-      line.y-axis(:x1='oX' :x2='oX ' y1='0' :y2='hh')
+      line.x-axis(:x1='oXa' :x2='w' :y1='hh' :y2='hh')
+      line.y-axis(:x1='oXa' :x2='oXa ' y1='0' :y2='hh')
       //- Axis labels
       g.axis-labels
         template(v-for='a,i in axisY')
@@ -228,14 +228,19 @@ export default {
         }
       })
     },
+    oXa () {
+      let { barW, oX } = this
+      return oX - barW / 2
+    },
     oX () {
-      return this.margin + (this.barW / 2)
+      let { margin, barW } = this
+      return margin + (barW / 2)
     },
     oY () {
       return this.margin / 2
     },
     hh () {
-      return this.h - (this.margin / 2)
+      return this.h - this.oY
     },
     ww () {
       return this.w - this.margin
