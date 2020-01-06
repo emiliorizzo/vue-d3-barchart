@@ -1,6 +1,8 @@
 
 const pkg = require('./package.json')
+const repoName = pkg.repository.url.split('/').pop()
 module.exports = {
+  publicPath: process.env.NODE_ENV === 'production' ? `/${repoName}/` : '/',
   chainWebpack: config => {
     config
       .plugin('define')
