@@ -1,16 +1,16 @@
-$color2 = #caa455
-$color = #1aad8d
+json('../colors.json')
+$color2 = color2
+$color = color
 // $color2 = #E3A826
 $white = lightness($color, 92%)
 $dark = lightness($color, 27%)
 $darkness = #225057
-$bg = saturation(lightness($color,25%),30%)
-//$bg = saturation(lightness($color,30%),20%)
-$bg = saturation(lightness($color,80%),15%)
+$bg = lightness($color,6%)
 $bg-plus = saturation(lightness($color,75%),30%)
-$warn = #be385d   
+$warn =red   
 $light = #f5fffc
 $mid = lightness($color, 55%)
+$txt-color = $darkness
 
 $border = $color solid 2px
 $txt-sh = 1px 1px 1px  rgba(0,0,0,.5)

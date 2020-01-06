@@ -1,0 +1,70 @@
+  @import '../vars.styl'
+  .header
+    display block
+    margin 0 0 2em 0
+    .title
+      color color
+    .subtitle
+      font-size .625em
+      font-style italic
+      font-weight normal
+  
+  .footer
+    display flex
+    flex 1
+    min-width 100%
+    margin 3em 0 0 0
+    justify-content center
+    align-items center
+    background $txt-color
+    div
+      display flex
+      justify-content center
+      align-items center
+
+  #app, .row
+    display flex
+    justify-content center
+    align-items center
+
+  #app
+    user-select none
+    flex-flow column wrap
+    min-height 100vh
+
+  .row
+    display flex
+    flex-flow row wrap
+    flex 1 1 100%
+    position relative
+
+  .links
+    display flex
+    list-style none
+    align-self flex-end
+    margin 0
+  .top
+    justify-content flex-end
+
+  .icon
+    svg
+      width 2em
+      height @width
+      fill $color
+      margin 0
+
+    &:hover
+      svg
+        fill $color2
+  
+  a .icon 
+    display inline
+  
+  .console
+    display block
+    max-width 20em
+    position fixed
+    margin 5em
+    right 0
+    bottom 0
+    color $dark
