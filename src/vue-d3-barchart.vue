@@ -246,8 +246,8 @@ export default {
     },
     bars () {
       let { scaleX, scaleY, percentX, percentY, colors } = this
-      return this.mappedData.map((d, i) => {
-        let { x, y } = d
+      return this.mappedData.map((m, i) => {
+        let { x, y, d } = m
         return {
           d,
           xv: x,
