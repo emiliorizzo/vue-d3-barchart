@@ -1,10 +1,22 @@
 <template lang="pug">
-  .chart
-    d3-barchart(:data='chartData' :options='options')
-    d3-barchart(:data='chartData2' :options='options')
+  .example
+    .charts
+      .chart(v-for='chart,chartName in charts')
+        .title {{chart.title || chartName}}
+        .bar-chart
+          d3-barchart(:data='chart.chartData' :options='chart.options' :key='chartName')
+        textarea {{chart.options}}
 </template>
 <script>
+import copyIcon from '../assets/copy.svg?raw'
 import d3Barchart from '../vue-d3-barchart.vue'
+import bars from './data/bars'
+import curve from './data/curve'
+import points from './data/points'
+import curvePoints from './data/curvePoints'
+import curveColors from './data/curveColors'
+import curveRect from './data/curveRect'
+
 export default {
   name: 'bar-chart-example',
   components: {
@@ -12,74 +24,56 @@ export default {
   },
   data () {
     return {
-      chartData: [
-        { x: 1, y: 50 },
-        { x: 2, y: 4 },
-        { x: 3, y: 22 },
-        { x: 4, y: 11 },
-        { x: 5, y: 13 },
-        { x: 6, y: 15 },
-        { x: 7, y: 13 },
-        { x: 8, y: 50 },
-        { x: 9, y: 5 },
-        { x: 10, y: 13 },
-        { x: 11, y: 15 },
-        { x: 12, y: 28 },
-        { x: 13, y: 30 },
-        { x: 15, y: 17 },
-        { x: 16, y: 3 },
-        { x: 17, y: 11 },
-        { x: 18, y: 22 },
-        { x: 19, y: 2 }
-      ],
-      chartData2: [
-        { x: 10, y: 13 },
-        { x: 11, y: 15 },
-        { x: 12, y: 28 },
-        { x: 1, y: 5 },
-        { x: 13, y: 30 },
-        { x: 15, y: 17 },
-        { x: 16, y: 3 },
-        { x: 17, y: 11 },
-        { x: 2, y: 4 },
-        { x: 3, y: 22 },
-        { x: 4, y: 11 },
-        { x: 5, y: 13 },
-        { x: 6, y: 90 },
-        { x: 7, y: 13 },
-        { x: 8, y: 12 },
-        { x: 9, y: 5 },
-        { x: 18, y: 22 },
-        { x: 19, y: 2 }
-      ],
-      options: {
-        rules: true,
-        axis: true,
-        labels: true,
-        padding: 0.3,
-        line: true,
-        points: false,
-        value: false,
-        gradient: {
-          stroke: true
-        },
-        curve: {
-        },
-        getX: (d) => {
-          return d.x
-        },
-        getY: (d) => {
-          return d.y
-        }
-      }
+      copyIcon,
+      charts: { bars, curve, points, curvePoints, curveColors, curveRect }
     }
   }
 }
 </script>
 <style lang="stylus">
+  @import '../vars.styl'
+
+  .example
+    display flex
+    max-width 100%
+
+  .charts
+    display flex
+    flex 1 1 100%
+    max-width 90%
+    flex-flow row wrap
+    justify-content center
+    margin auto
+
+  .title
+    display flex
+    flex 1
+    margin 0.5em 0em
+
   .chart
-    display: inline-block
-    width: 600px
-    height: 200px
-    margin-top: 5em
+    display flex
+    flex-flow column wrap
+    margin 1em
+    align-self flex-start
+
+    textarea
+      font-size 0.5em
+      margin-top 0.5em
+      resize vertical
+
+    button
+      width auto !important
+      flex 1
+      display flex
+      background none
+      margin 0
+      padding 0
+      align-self flex-end
+
+  .bar-chart
+    border 1px solid $txt-color
+    height 150px
+    width 400px
+    padding 1em
+    box-shadow 2px 2px 8px alpha($color, 0.2)
 </style>
