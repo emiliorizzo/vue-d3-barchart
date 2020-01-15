@@ -146,12 +146,12 @@ export default {
         .range([0, w])
     },
     scaleBarsX () {
-      let { xMax, w, xMin } = this
+      let { xMax, ww, xMin } = this
       let { padding } = this.opts
       return d3.scaleBand()
-        .domain(d3.range(xMin, xMax + padding))
+        .domain(d3.range(xMin, xMax))
         .paddingInner(padding)
-        .rangeRound([0, w])
+        .rangeRound([0, ww])
     },
     scaleX () {
       let { scaleLinearX, scaleBarsX, isLinear } = this
@@ -272,7 +272,7 @@ export default {
       return this.h - this.oY
     },
     ww () {
-      return this.w - this.margin
+      return this.w - this.oY
     },
     barW () {
       let { bandwidth } = this.scaleX
