@@ -223,6 +223,51 @@ module.exports = function (it) {
 
 /***/ }),
 
+/***/ "1c7e":
+/***/ (function(module, exports, __webpack_require__) {
+
+var wellKnownSymbol = __webpack_require__("b622");
+
+var ITERATOR = wellKnownSymbol('iterator');
+var SAFE_CLOSING = false;
+
+try {
+  var called = 0;
+  var iteratorWithReturn = {
+    next: function () {
+      return { done: !!called++ };
+    },
+    'return': function () {
+      SAFE_CLOSING = true;
+    }
+  };
+  iteratorWithReturn[ITERATOR] = function () {
+    return this;
+  };
+  // eslint-disable-next-line no-throw-literal
+  Array.from(iteratorWithReturn, function () { throw 2; });
+} catch (error) { /* empty */ }
+
+module.exports = function (exec, SKIP_CLOSING) {
+  if (!SKIP_CLOSING && !SAFE_CLOSING) return false;
+  var ITERATION_SUPPORT = false;
+  try {
+    var object = {};
+    object[ITERATOR] = function () {
+      return {
+        next: function () {
+          return { done: ITERATION_SUPPORT = true };
+        }
+      };
+    };
+    exec(object);
+  } catch (error) { /* empty */ }
+  return ITERATION_SUPPORT;
+};
+
+
+/***/ }),
+
 /***/ "1d80":
 /***/ (function(module, exports) {
 
@@ -388,6 +433,24 @@ if (NOT_GENERIC || INCORRECT_NAME) {
     return '/' + p + '/' + f;
   }, { unsafe: true });
 }
+
+
+/***/ }),
+
+/***/ "35a1":
+/***/ (function(module, exports, __webpack_require__) {
+
+var classof = __webpack_require__("f5df");
+var Iterators = __webpack_require__("3f8c");
+var wellKnownSymbol = __webpack_require__("b622");
+
+var ITERATOR = wellKnownSymbol('iterator');
+
+module.exports = function (it) {
+  if (it != undefined) return it[ITERATOR]
+    || it['@@iterator']
+    || Iterators[classof(it)];
+};
 
 
 /***/ }),
@@ -591,6 +654,56 @@ module.exports = {
 
 /***/ }),
 
+/***/ "4df4":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var bind = __webpack_require__("f8c2");
+var toObject = __webpack_require__("7b0b");
+var callWithSafeIterationClosing = __webpack_require__("9bdd");
+var isArrayIteratorMethod = __webpack_require__("e95a");
+var toLength = __webpack_require__("50c4");
+var createProperty = __webpack_require__("8418");
+var getIteratorMethod = __webpack_require__("35a1");
+
+// `Array.from` method implementation
+// https://tc39.github.io/ecma262/#sec-array.from
+module.exports = function from(arrayLike /* , mapfn = undefined, thisArg = undefined */) {
+  var O = toObject(arrayLike);
+  var C = typeof this == 'function' ? this : Array;
+  var argumentsLength = arguments.length;
+  var mapfn = argumentsLength > 1 ? arguments[1] : undefined;
+  var mapping = mapfn !== undefined;
+  var index = 0;
+  var iteratorMethod = getIteratorMethod(O);
+  var length, result, step, iterator, next;
+  if (mapping) mapfn = bind(mapfn, argumentsLength > 2 ? arguments[2] : undefined, 2);
+  // if the target is not iterable or it's an array with the default iterator - use a simple case
+  if (iteratorMethod != undefined && !(C == Array && isArrayIteratorMethod(iteratorMethod))) {
+    iterator = iteratorMethod.call(O);
+    next = iterator.next;
+    result = new C();
+    for (;!(step = next.call(iterator)).done; index++) {
+      createProperty(result, index, mapping
+        ? callWithSafeIterationClosing(iterator, mapfn, [step.value, index], true)
+        : step.value
+      );
+    }
+  } else {
+    length = toLength(O.length);
+    result = new C(length);
+    for (;length > index; index++) {
+      createProperty(result, index, mapping ? mapfn(O[index], index) : O[index]);
+    }
+  }
+  result.length = index;
+  return result;
+};
+
+
+/***/ }),
+
 /***/ "50c4":
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -737,66 +850,6 @@ if (v8) {
 }
 
 module.exports = version && +version;
-
-
-/***/ }),
-
-/***/ "60da":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var DESCRIPTORS = __webpack_require__("83ab");
-var fails = __webpack_require__("d039");
-var objectKeys = __webpack_require__("df75");
-var getOwnPropertySymbolsModule = __webpack_require__("7418");
-var propertyIsEnumerableModule = __webpack_require__("d1e7");
-var toObject = __webpack_require__("7b0b");
-var IndexedObject = __webpack_require__("44ad");
-
-var nativeAssign = Object.assign;
-var defineProperty = Object.defineProperty;
-
-// `Object.assign` method
-// https://tc39.github.io/ecma262/#sec-object.assign
-module.exports = !nativeAssign || fails(function () {
-  // should have correct order of operations (Edge bug)
-  if (DESCRIPTORS && nativeAssign({ b: 1 }, nativeAssign(defineProperty({}, 'a', {
-    enumerable: true,
-    get: function () {
-      defineProperty(this, 'b', {
-        value: 3,
-        enumerable: false
-      });
-    }
-  }), { b: 2 })).b !== 1) return true;
-  // should work with symbols and should have deterministic property order (V8 bug)
-  var A = {};
-  var B = {};
-  // eslint-disable-next-line no-undef
-  var symbol = Symbol();
-  var alphabet = 'abcdefghijklmnopqrst';
-  A[symbol] = 7;
-  alphabet.split('').forEach(function (chr) { B[chr] = chr; });
-  return nativeAssign({}, A)[symbol] != 7 || objectKeys(nativeAssign({}, B)).join('') != alphabet;
-}) ? function assign(target, source) { // eslint-disable-line no-unused-vars
-  var T = toObject(target);
-  var argumentsLength = arguments.length;
-  var index = 1;
-  var getOwnPropertySymbols = getOwnPropertySymbolsModule.f;
-  var propertyIsEnumerable = propertyIsEnumerableModule.f;
-  while (argumentsLength > index) {
-    var S = IndexedObject(arguments[index++]);
-    var keys = getOwnPropertySymbols ? objectKeys(S).concat(getOwnPropertySymbols(S)) : objectKeys(S);
-    var length = keys.length;
-    var j = 0;
-    var key;
-    while (length > j) {
-      key = keys[j++];
-      if (!DESCRIPTORS || propertyIsEnumerable.call(S, key)) T[key] = S[key];
-    }
-  } return T;
-} : nativeAssign;
 
 
 /***/ }),
@@ -1315,6 +1368,24 @@ module.exports = !fails(function () {
 
 /***/ }),
 
+/***/ "8418":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var toPrimitive = __webpack_require__("c04e");
+var definePropertyModule = __webpack_require__("9bf2");
+var createPropertyDescriptor = __webpack_require__("5c6c");
+
+module.exports = function (object, key, value) {
+  var propertyKey = toPrimitive(key);
+  if (propertyKey in object) definePropertyModule.f(object, propertyKey, createPropertyDescriptor(0, value));
+  else object[propertyKey] = value;
+};
+
+
+/***/ }),
+
 /***/ "861d":
 /***/ (function(module, exports) {
 
@@ -1398,6 +1469,26 @@ var NATIVE = isForced.NATIVE = 'N';
 var POLYFILL = isForced.POLYFILL = 'P';
 
 module.exports = isForced;
+
+
+/***/ }),
+
+/***/ "9bdd":
+/***/ (function(module, exports, __webpack_require__) {
+
+var anObject = __webpack_require__("825a");
+
+// call something on iterator step with safe closing on error
+module.exports = function (iterator, fn, value, ENTRIES) {
+  try {
+    return ENTRIES ? fn(anObject(value)[0], value[1]) : fn(value);
+  // 7.4.6 IteratorClose(iterator, completion)
+  } catch (error) {
+    var returnMethod = iterator['return'];
+    if (returnMethod !== undefined) anObject(returnMethod.call(iterator));
+    throw error;
+  }
+};
 
 
 /***/ }),
@@ -1796,6 +1887,26 @@ hiddenKeys[HIDDEN] = true;
 
 /***/ }),
 
+/***/ "a630":
+/***/ (function(module, exports, __webpack_require__) {
+
+var $ = __webpack_require__("23e7");
+var from = __webpack_require__("4df4");
+var checkCorrectnessOfIteration = __webpack_require__("1c7e");
+
+var INCORRECT_ITERATION = !checkCorrectnessOfIteration(function (iterable) {
+  Array.from(iterable);
+});
+
+// `Array.from` method
+// https://tc39.github.io/ecma262/#sec-array.from
+$({ target: 'Array', stat: true, forced: INCORRECT_ITERATION }, {
+  from: from
+});
+
+
+/***/ }),
+
 /***/ "a691":
 /***/ (function(module, exports) {
 
@@ -2190,21 +2301,6 @@ var EXISTS = isObject(document) && isObject(document.createElement);
 module.exports = function (it) {
   return EXISTS ? document.createElement(it) : {};
 };
-
-
-/***/ }),
-
-/***/ "cca6":
-/***/ (function(module, exports, __webpack_require__) {
-
-var $ = __webpack_require__("23e7");
-var assign = __webpack_require__("60da");
-
-// `Object.assign` method
-// https://tc39.github.io/ecma262/#sec-object.assign
-$({ target: 'Object', stat: true, forced: Object.assign !== assign }, {
-  assign: assign
-});
 
 
 /***/ }),
@@ -2696,6 +2792,23 @@ module.exports = Array.isArray || function isArray(arg) {
 
 /***/ }),
 
+/***/ "e95a":
+/***/ (function(module, exports, __webpack_require__) {
+
+var wellKnownSymbol = __webpack_require__("b622");
+var Iterators = __webpack_require__("3f8c");
+
+var ITERATOR = wellKnownSymbol('iterator');
+var ArrayPrototype = Array.prototype;
+
+// check on default Array iterator
+module.exports = function (it) {
+  return it !== undefined && (Iterators.Array === it || ArrayPrototype[ITERATOR] === it);
+};
+
+
+/***/ }),
+
 /***/ "f5df":
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -2955,12 +3068,12 @@ if (typeof window !== 'undefined') {
 // Indicate to webpack that this file can be concatenated
 /* harmony default export */ var setPublicPath = (null);
 
-// CONCATENATED MODULE: ./node_modules/cache-loader/dist/cjs.js?{"cacheDirectory":"node_modules/.cache/vue-loader","cacheIdentifier":"7e5fe606-vue-loader-template"}!./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/pug-plain-loader!./node_modules/cache-loader/dist/cjs.js??ref--0-0!./node_modules/vue-loader/lib??vue-loader-options!./src/vue-d3-barchart.vue?vue&type=template&id=354eeaee&lang=pug&
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return (_vm.bars.length)?_c('svg',{staticClass:"d3-bar-chart",attrs:{"width":_vm.w,"height":_vm.h}},[(_vm.renderGradient)?_c('defs',[_c('linearGradient',{attrs:{"id":_vm.gradientId,"x1":"0","x2":"100%","y1":"0","y2":"0"}},_vm._l((_vm.bars),function(d,i){return _c('stop',{key:i,attrs:{"offset":d.percentX + "%","stop-color":d.color}})}))],1):_vm._e(),(_vm.opts.axis.linesY)?_c('g',{staticClass:"lines"},_vm._l((_vm.axisY),function(a,i){return _c('line',{staticClass:"line-y",attrs:{"x1":_vm.margin,"x2":_vm.w,"y1":a.y,"y2":a.y}})})):_vm._e(),(_vm.opts.axis)?_c('g',{staticClass:"axis"},[_c('line',{staticClass:"x-axis",attrs:{"x1":_vm.oXa,"x2":_vm.w,"y1":_vm.hh,"y2":_vm.hh}}),_c('line',{staticClass:"y-axis",attrs:{"x1":_vm.oXa,"x2":_vm.oXa,"y1":"0","y2":_vm.hh}}),_c('g',{staticClass:"axis-labels"},[_vm._l((_vm.axisY),function(a,i){return [(_vm.opts.axis.valuesY)?_c('text',{staticClass:"axis-label",attrs:{"x":"0","y":a.y}},[_vm._v(_vm._s(a.value))]):_vm._e()]})],2)]):_vm._e(),(_vm.opts.curveBack)?_c('g',{staticClass:"curve-back"},[_c('path',{style:(_vm.curveBackStyle),attrs:{"d":_vm.curve(_vm.opts.curveBack),"stroke":_vm.curveBackStyle.stroke,"fill":_vm.curveBackStyle.fill}})]):_vm._e(),_c('g',{staticClass:"bars"},[_vm._l((_vm.bars),function(d,i){return [(_vm.opts.bars)?_c('rect',{staticClass:"bar",style:(_vm.barStyle(d)),attrs:{"width":d.w,"height":d.y,"x":_vm.barX(d),"y":_vm.barY(d)},on:{"click":function($event){_vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.curve)?_c('g',{staticClass:"curve"},[_c('path',{style:(_vm.curveStyle),attrs:{"d":_vm.curve(_vm.opts.curve),"stroke":_vm.curveStyle.stroke,"fill":_vm.curveStyle.fill}})]):_vm._e(),_c('g',{staticClass:"dummies"},[_vm._l((_vm.bars),function(d,i){return [((_vm.opts.tip || _vm.opts.line))?_c('rect',{staticClass:"dummy-bar",class:(_vm.opts.bars) ? "has-bars":"",attrs:{"width":d.w,"height":_vm.h,"x":_vm.barX(d),"y":"0"},on:{"mouseover":function($event){$event.preventDefault();_vm.startMove($event,d)},"mouseleave":function($event){_vm.stopMove($event,d)},"click":function($event){_vm.barClick($event,d)},"touchstart":function($event){_vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.marks)?_c('g',{staticClass:"marks"},[_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type === "square")?_c('rect',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"x":_vm.barX(d) + (_vm.barW /2) - (_vm.markSize /2),"y":_vm.barY(d)-(_vm.markSize /2),"width":_vm.markSize,"height":_vm.markSize}}):_vm._e()}),_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type !=="square")?_c('circle',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"r":_vm.markSize / 2,"cx":_vm.barX(d) + _vm.barW /2,"cy":_vm.barY(d)}}):_vm._e()})],2):_vm._e(),(_vm.opts.line)?_c('g',{directives:[{name:"show",rawName:"v-show",value:(_vm.over),expression:"over"}],staticClass:"chart-line"},[_c('line',{staticClass:"line",attrs:{"x1":_vm.lineX,"x2":_vm.lineX,"y1":0,"y2":_vm.h - _vm.margin}})]):_vm._e(),(_vm.opts.tip && _vm.over)?_c('g',{staticClass:"chart-tip"},[(_vm.opts.tipBack)?_c('rect',{staticClass:"chart-tip-back",attrs:{"x":_vm.lineX + _vm.fontSize/2,"y":0,"width":_vm.labelW + "ex","height":_vm.label.length + .25 + "em","rx":_vm.labelW / 5,"ry":_vm.label.lenght},on:{"touchstart":function($event){_vm.barClick(_vm.over)}}}):_vm._e(),_c('text',{staticClass:"label",attrs:{"x":_vm.lineX + _vm.fontSize,"y":"0","font-size":_vm.fontSize}},_vm._l((_vm.label),function(line,index){return _c('tspan',{key:index,staticClass:"label-line",class:line.css,style:(line.style),attrs:{"x":_vm.lineX + _vm.fontSize,"dy":"1.2em"}},[_vm._v(_vm._s(line.txt))])}))]):_vm._e()]):_vm._e()}
+// CONCATENATED MODULE: ./node_modules/cache-loader/dist/cjs.js?{"cacheDirectory":"node_modules/.cache/vue-loader","cacheIdentifier":"b6224b8e-vue-loader-template"}!./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/pug-plain-loader!./node_modules/cache-loader/dist/cjs.js??ref--0-0!./node_modules/vue-loader/lib??vue-loader-options!./src/vue-d3-barchart.vue?vue&type=template&id=51e2fcd7&lang=pug&
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return (_vm.bars.length)?_c('svg',{staticClass:"d3-bar-chart",attrs:{"width":_vm.w,"height":_vm.h}},[(_vm.renderGradient)?_c('defs',[_c('linearGradient',{attrs:{"id":_vm.gradientId,"x1":"0","x2":"100%","y1":"0","y2":"0"}},_vm._l((_vm.bars),function(d,i){return _c('stop',{key:i,attrs:{"offset":d.percentX + "%","stop-color":d.color}})}))],1):_vm._e(),(_vm.opts.axis.linesY)?_c('g',{staticClass:"lines"},_vm._l((_vm.axisY),function(a,i){return _c('line',{staticClass:"line-y",attrs:{"x1":_vm.margin,"x2":_vm.w,"y1":a.y,"y2":a.y}})})):_vm._e(),(_vm.opts.axis)?_c('g',{staticClass:"axis"},[_c('line',{staticClass:"x-axis",attrs:{"x1":_vm.oXa,"x2":_vm.w,"y1":_vm.hh,"y2":_vm.hh}}),_c('line',{staticClass:"y-axis",attrs:{"x1":_vm.oXa,"x2":_vm.oXa,"y1":"0","y2":_vm.hh}}),_c('g',{staticClass:"axis-labels"},[_vm._l((_vm.axisY),function(a,i){return [(_vm.opts.axis.valuesY)?_c('text',{staticClass:"axis-label",attrs:{"x":"0","y":a.y}},[_vm._v(_vm._s(a.value))]):_vm._e()]})],2)]):_vm._e(),(_vm.opts.curveBack)?_c('g',{staticClass:"curve-back"},[_c('path',{style:(_vm.curveBackStyle),attrs:{"d":_vm.curve(_vm.opts.curveBack),"stroke":_vm.curveBackStyle.stroke,"fill":_vm.curveBackStyle.fill}})]):_vm._e(),_c('g',{staticClass:"bars"},[_vm._l((_vm.bars),function(d,i){return [(_vm.opts.bars)?_c('rect',{staticClass:"bar",style:(_vm.barStyle(d)),attrs:{"width":d.w,"height":d.y,"x":_vm.barX(d),"y":_vm.barY(d)},on:{"click":function($event){_vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.curve)?_c('g',{staticClass:"curve"},[_c('path',{style:(_vm.curveStyle),attrs:{"d":_vm.curve(_vm.opts.curve),"stroke":_vm.curveStyle.stroke,"fill":_vm.curveStyle.fill}})]):_vm._e(),_c('g',{staticClass:"dummies"},[_vm._l((_vm.dummyBars),function(d,i){return [((_vm.opts.tip || _vm.opts.line))?_c('rect',{staticClass:"dummy-bar",class:(_vm.opts.bars) ? "has-bars":"",attrs:{"width":d.w,"height":_vm.h,"x":_vm.barX(d),"y":"0"},on:{"mouseover":function($event){$event.preventDefault();_vm.startMove($event,d)},"mouseleave":function($event){_vm.stopMove($event,d)},"click":function($event){_vm.barClick($event,d)},"touchstart":function($event){_vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.marks)?_c('g',{staticClass:"marks"},[_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type === "square")?_c('rect',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"x":_vm.barX(d) + (_vm.barW /2) - (_vm.markSize /2),"y":_vm.barY(d)-(_vm.markSize /2),"width":_vm.markSize,"height":_vm.markSize}}):_vm._e()}),_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type !=="square")?_c('circle',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"r":_vm.markSize / 2,"cx":_vm.barX(d) + _vm.barW /2,"cy":_vm.barY(d)}}):_vm._e()})],2):_vm._e(),(_vm.opts.line)?_c('g',{directives:[{name:"show",rawName:"v-show",value:(_vm.over),expression:"over"}],staticClass:"chart-line"},[_c('line',{staticClass:"line",attrs:{"x1":_vm.lineX,"x2":_vm.lineX,"y1":0,"y2":_vm.h - _vm.margin}})]):_vm._e(),(_vm.opts.tip && _vm.over)?_c('g',{staticClass:"chart-tip"},[(_vm.opts.tipBack)?_c('rect',{staticClass:"chart-tip-back",attrs:{"x":_vm.lineX + _vm.fontSize/2,"y":0,"width":_vm.labelW + "ex","height":_vm.label.length + .25 + "em","rx":_vm.labelW / 5,"ry":_vm.label.lenght},on:{"touchstart":function($event){_vm.barClick(_vm.over)}}}):_vm._e(),_c('text',{staticClass:"label",attrs:{"x":_vm.lineX + _vm.fontSize,"y":"0","font-size":_vm.fontSize}},_vm._l((_vm.label),function(line,index){return _c('tspan',{key:index,staticClass:"label-line",class:line.css,style:(line.style),attrs:{"x":_vm.lineX + _vm.fontSize,"dy":"1.2em"}},[_vm._v(_vm._s(line.txt))])}))]):_vm._e()]):_vm._e()}
 var staticRenderFns = []
 
 
-// CONCATENATED MODULE: ./src/vue-d3-barchart.vue?vue&type=template&id=354eeaee&lang=pug&
+// CONCATENATED MODULE: ./src/vue-d3-barchart.vue?vue&type=template&id=51e2fcd7&lang=pug&
 
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.array.fill.js
 var es_array_fill = __webpack_require__("cb29");
@@ -2970,9 +3083,6 @@ var es_array_join = __webpack_require__("a15b");
 
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.array.map.js
 var es_array_map = __webpack_require__("d81d");
-
-// EXTERNAL MODULE: ./node_modules/core-js/modules/es.object.assign.js
-var es_object_assign = __webpack_require__("cca6");
 
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.object.keys.js
 var es_object_keys = __webpack_require__("b64b");
@@ -2989,6 +3099,16 @@ var es_parse_int = __webpack_require__("e25e");
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.regexp.to-string.js
 var es_regexp_to_string = __webpack_require__("25f0");
 
+// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/arrayWithoutHoles.js
+function _arrayWithoutHoles(arr) {
+  if (Array.isArray(arr)) {
+    for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) {
+      arr2[i] = arr[i];
+    }
+
+    return arr2;
+  }
+}
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.symbol.js
 var es_symbol = __webpack_require__("a4d3");
 
@@ -2997,6 +3117,9 @@ var es_symbol_description = __webpack_require__("e01a");
 
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.symbol.iterator.js
 var es_symbol_iterator = __webpack_require__("d28b");
+
+// EXTERNAL MODULE: ./node_modules/core-js/modules/es.array.from.js
+var es_array_from = __webpack_require__("a630");
 
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.array.iterator.js
 var es_array_iterator = __webpack_require__("e260");
@@ -3007,6 +3130,30 @@ var es_string_iterator = __webpack_require__("3ca3");
 // EXTERNAL MODULE: ./node_modules/core-js/modules/web.dom-collections.iterator.js
 var web_dom_collections_iterator = __webpack_require__("ddb0");
 
+// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/iterableToArray.js
+
+
+
+
+
+
+
+
+
+function _iterableToArray(iter) {
+  if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+}
+// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/nonIterableSpread.js
+function _nonIterableSpread() {
+  throw new TypeError("Invalid attempt to spread non-iterable instance");
+}
+// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/toConsumableArray.js
+
+
+
+function _toConsumableArray(arr) {
+  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
+}
 // CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/typeof.js
 
 
@@ -9928,13 +10075,35 @@ var d3 = Object.assign({}, d3_array_namespaceObject, d3_scale_namespaceObject, d
   },
   computed: {
     xMax: function xMax() {
-      return this.getX ? d3.max(this.xValues) : this.dataCount;
+      return this.getX ? d3.max(this.xValues) + 1 : this.dataCount;
+    },
+    xMin: function xMin() {
+      return this.getX ? d3.min(this.xValues) : 0;
+    },
+    isLinear: function isLinear() {
+      var _this$opts = this.opts,
+          bars = _this$opts.bars,
+          marks = _this$opts.marks;
+      return !bars && !marks;
+    },
+    scaleLinearX: function scaleLinearX() {
+      var xMax = this.xMax,
+          w = this.w,
+          xMin = this.xMin;
+      return d3.scaleLinear().domain([xMin, xMax]).range([0, w]);
+    },
+    scaleBarsX: function scaleBarsX() {
+      var xMax = this.xMax,
+          ww = this.ww,
+          xMin = this.xMin;
+      var padding = this.opts.padding;
+      return d3.scaleBand().domain(d3.range(xMin, xMax)).paddingInner(padding).rangeRound([0, ww]);
     },
     scaleX: function scaleX() {
-      var xMax = this.xMax,
-          ww = this.ww;
-      var padding = this.opts.padding;
-      return d3.scaleBand().domain(d3.range(0, xMax + 1)).paddingInner(padding).rangeRound([0, ww]);
+      var scaleLinearX = this.scaleLinearX,
+          scaleBarsX = this.scaleBarsX,
+          isLinear = this.isLinear;
+      return isLinear ? scaleLinearX : scaleBarsX;
     },
     scaleY: function scaleY() {
       return d3.scaleLinear().domain([this.min, this.max]).rangeRound([0, this.hh]);
@@ -10002,7 +10171,8 @@ var d3 = Object.assign({}, d3_array_namespaceObject, d3_scale_namespaceObject, d
           scaleY = this.scaleY,
           percentX = this.percentX,
           percentY = this.percentY,
-          colors = this.colors;
+          colors = this.colors,
+          barW = this.barW;
       return this.mappedData.map(function (m, i) {
         var x = m.x,
             y = m.y,
@@ -10016,8 +10186,21 @@ var d3 = Object.assign({}, d3_array_namespaceObject, d3_scale_namespaceObject, d
           color: colors(y, d),
           percentX: parseInt(percentX(x)),
           percentY: parseInt(percentY(y)),
-          w: scaleX.bandwidth()
+          w: barW
         };
+      });
+    },
+    dummyBars: function dummyBars() {
+      var isLinear = this.isLinear,
+          bars = this.bars;
+      bars = _toConsumableArray(bars);
+      if (!isLinear) return bars;
+      return bars.map(function (b, i) {
+        b = Object.assign({}, b);
+        var px = i > 0 ? bars[i - 1].x : 0;
+        var nx = i < bars.length - 1 ? bars[i + 1].x : b.x;
+        b.w = nx - px;
+        return b;
       });
     },
     oXa: function oXa() {
@@ -10034,13 +10217,11 @@ var d3 = Object.assign({}, d3_array_namespaceObject, d3_scale_namespaceObject, d
       return this.h - this.oY;
     },
     ww: function ww() {
-      return this.w - this.margin;
+      return this.w - this.oY;
     },
     barW: function barW() {
-      return this.scaleX.bandwidth();
-    },
-    barStep: function barStep() {
-      return this.scaleX.step();
+      var bandwidth = this.scaleX.bandwidth;
+      return typeof bandwidth === 'function' ? bandwidth() : 0;
     },
     barPad: function barPad() {
       return this.scaleX.padding();

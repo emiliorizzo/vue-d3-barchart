@@ -1,6 +1,6 @@
 {
   "name": "vue-d3-barchart",
-  "version": "0.0.26",
+  "version": "0.0.27",
   "description": "Vue component to draw bar charts using d3 ",
   "author": "emi",
   "scripts": {
