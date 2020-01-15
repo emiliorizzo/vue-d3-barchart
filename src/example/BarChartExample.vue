@@ -15,7 +15,7 @@ import curve from './data/curve'
 import points from './data/points'
 import curvePoints from './data/curvePoints'
 import curveColors from './data/curveColors'
-import curveRect from './data/curveRect'
+import bars2 from './data/bars2'
 
 export default {
   name: 'bar-chart-example',
@@ -25,7 +25,7 @@ export default {
   data () {
     return {
       copyIcon,
-      charts: { bars, curve, points, curvePoints, curveColors, curveRect }
+      charts: { bars, curve, points, curvePoints, curveColors, bars2 }
     }
   }
 }

@@ -9,6 +9,6 @@ export const createExampleData = ({ title, chartData, options, controls }) => {
   title = title || 'example'
   chartData = chartData || randomData()
   options = options || defaultOptions
-  options = Object.assign(options, { getY: (d) => d.v })
+  options = (!options.getY) ? Object.assign(options, { getY: (d) => d.v }) : options
   return { title, chartData, options, controls }
 }
