@@ -130,7 +130,7 @@ export default {
   },
   computed: {
     xMax () {
-      return (this.getX) ? d3.max(this.xValues) : this.dataCount
+      return (this.getX) ? d3.max(this.xValues) + 1 : this.dataCount
     },
     xMin () {
       return (this.getX) ? d3.min(this.xValues) : 0
