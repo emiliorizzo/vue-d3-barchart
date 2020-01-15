@@ -32,7 +32,7 @@
     //-
     //- dummy bars to capture mouse events
     g.dummies
-      template(v-for="d,i in bars")
+      template(v-for="d,i in dummyBars")
         rect.dummy-bar( v-if='(opts.tip || opts.line)' :width="d.w" :height="h" :x="barX(d)" y='0'
           :class='(opts.bars) ? "has-bars":""'
           @mouseover.prevent='startMove($event,d)'
@@ -135,13 +135,27 @@ export default {
     xMin () {
       return (this.getX) ? d3.min(this.xValues) : 0
     },
-    scaleX () {
+    isLinear () {
+      let { bars, marks } = this.opts
+      return !bars && !marks
+    },
+    scaleLinearX () {
+      let { xMax, w, xMin } = this
+      return d3.scaleLinear()
+        .domain([xMin, xMax])
+        .range([0, w])
+    },
+    scaleBarsX () {
       let { xMax, w, xMin } = this
       let { padding } = this.opts
       return d3.scaleBand()
-        .domain(d3.range(xMin, xMax + 1))
+        .domain(d3.range(xMin, xMax + padding))
         .paddingInner(padding)
         .rangeRound([0, w])
+    },
+    scaleX () {
+      let { scaleLinearX, scaleBarsX, isLinear } = this
+      return (isLinear) ? scaleLinearX : scaleBarsX
     },
     scaleY () {
       return d3.scaleLinear()
@@ -216,7 +230,7 @@ export default {
       return axis
     },
     bars () {
-      let { scaleX, scaleY, percentX, percentY, colors } = this
+      let { scaleX, scaleY, percentX, percentY, colors, barW } = this
       return this.mappedData.map((m, i) => {
         let { x, y, d } = m
         return {
@@ -228,8 +242,20 @@ export default {
           color: colors(y, d),
           percentX: parseInt(percentX(x)),
           percentY: parseInt(percentY(y)),
-          w: scaleX.bandwidth()
+          w: barW
         }
+      })
+    },
+    dummyBars () {
+      let { isLinear, bars } = this
+      bars = [...bars]
+      if (!isLinear) return bars
+      return bars.map((b, i) => {
+        b = Object.assign({}, b)
+        let px = (i > 0) ? bars[i - 1].x : 0
+        let nx = (i < bars.length - 1) ? bars[i + 1].x : b.x
+        b.w = nx - px
+        return b
       })
     },
     oXa () {
@@ -249,10 +275,8 @@ export default {
       return this.w - this.margin
     },
     barW () {
-      return this.scaleX.bandwidth()
-    },
-    barStep () {
-      return this.scaleX.step()
+      let { bandwidth } = this.scaleX
+      return (typeof bandwidth === 'function') ? bandwidth() : 0
     },
     barPad () {
       return this.scaleX.padding()
