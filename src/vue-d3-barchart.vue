@@ -132,13 +132,16 @@ export default {
     xMax () {
       return (this.getX) ? d3.max(this.xValues) : this.dataCount
     },
+    xMin () {
+      return (this.getX) ? d3.min(this.xValues) : 0
+    },
     scaleX () {
-      let { xMax, ww } = this
+      let { xMax, w, xMin } = this
       let { padding } = this.opts
       return d3.scaleBand()
-        .domain(d3.range(0, xMax + 1))
+        .domain(d3.range(xMin, xMax + 1))
         .paddingInner(padding)
-        .rangeRound([0, ww])
+        .rangeRound([0, w])
     },
     scaleY () {
       return d3.scaleLinear()
