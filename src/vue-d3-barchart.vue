@@ -247,14 +247,14 @@ export default {
       })
     },
     dummyBars () {
-      let { isLinear, bars } = this
+      let { isLinear, bars, ww } = this
       bars = [...bars]
+      const w = ww / bars.length
       if (!isLinear) return bars
       return bars.map((b, i) => {
         b = Object.assign({}, b)
-        const px = (i > 0) ? bars[i - 1].x : 0
-        const nx = (i < bars.length - 1) ? bars[i + 1].x : b.x
-        b.w = nx - px
+        b.w = w
+        b.x = b.x - (w / 2)
         return b
       })
     },
