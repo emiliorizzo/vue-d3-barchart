@@ -102,6 +102,37 @@ module.exports = String(test) === '[object z]';
 
 /***/ }),
 
+/***/ "0366":
+/***/ (function(module, exports, __webpack_require__) {
+
+var aFunction = __webpack_require__("1c0b");
+
+// optional / simple context binding
+module.exports = function (fn, that, length) {
+  aFunction(fn);
+  if (that === undefined) return fn;
+  switch (length) {
+    case 0: return function () {
+      return fn.call(that);
+    };
+    case 1: return function (a) {
+      return fn.call(that, a);
+    };
+    case 2: return function (a, b) {
+      return fn.call(that, a, b);
+    };
+    case 3: return function (a, b, c) {
+      return fn.call(that, a, b, c);
+    };
+  }
+  return function (/* ...args */) {
+    return fn.apply(that, arguments);
+  };
+};
+
+
+/***/ }),
+
 /***/ "057f":
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -277,7 +308,7 @@ module.exports = function (it) {
 
 var fails = __webpack_require__("d039");
 var wellKnownSymbol = __webpack_require__("b622");
-var V8_VERSION = __webpack_require__("60ae");
+var V8_VERSION = __webpack_require__("2d00");
 
 var SPECIES = wellKnownSymbol('species');
 
@@ -424,6 +455,43 @@ if (NOT_GENERIC || INCORRECT_NAME) {
     return '/' + p + '/' + f;
   }, { unsafe: true });
 }
+
+
+/***/ }),
+
+/***/ "2d00":
+/***/ (function(module, exports, __webpack_require__) {
+
+var global = __webpack_require__("da84");
+var userAgent = __webpack_require__("342f");
+
+var process = global.process;
+var versions = process && process.versions;
+var v8 = versions && versions.v8;
+var match, version;
+
+if (v8) {
+  match = v8.split('.');
+  version = match[0] + match[1];
+} else if (userAgent) {
+  match = userAgent.match(/Edge\/(\d+)/);
+  if (!match || match[1] >= 74) {
+    match = userAgent.match(/Chrome\/(\d+)/);
+    if (match) version = match[1];
+  }
+}
+
+module.exports = version && +version;
+
+
+/***/ }),
+
+/***/ "342f":
+/***/ (function(module, exports, __webpack_require__) {
+
+var getBuiltIn = __webpack_require__("d066");
+
+module.exports = getBuiltIn('navigator', 'userAgent') || '';
 
 
 /***/ }),
@@ -650,7 +718,7 @@ module.exports = {
 
 "use strict";
 
-var bind = __webpack_require__("f8c2");
+var bind = __webpack_require__("0366");
 var toObject = __webpack_require__("7b0b");
 var callWithSafeIterationClosing = __webpack_require__("9bdd");
 var isArrayIteratorMethod = __webpack_require__("e95a");
@@ -666,9 +734,9 @@ module.exports = function from(arrayLike /* , mapfn = undefined, thisArg = undef
   var argumentsLength = arguments.length;
   var mapfn = argumentsLength > 1 ? arguments[1] : undefined;
   var mapping = mapfn !== undefined;
-  var index = 0;
   var iteratorMethod = getIteratorMethod(O);
-  var length, result, step, iterator, next;
+  var index = 0;
+  var length, result, step, iterator, next, value;
   if (mapping) mapfn = bind(mapfn, argumentsLength > 2 ? arguments[2] : undefined, 2);
   // if the target is not iterable or it's an array with the default iterator - use a simple case
   if (iteratorMethod != undefined && !(C == Array && isArrayIteratorMethod(iteratorMethod))) {
@@ -676,16 +744,15 @@ module.exports = function from(arrayLike /* , mapfn = undefined, thisArg = undef
     next = iterator.next;
     result = new C();
     for (;!(step = next.call(iterator)).done; index++) {
-      createProperty(result, index, mapping
-        ? callWithSafeIterationClosing(iterator, mapfn, [step.value, index], true)
-        : step.value
-      );
+      value = mapping ? callWithSafeIterationClosing(iterator, mapfn, [step.value, index], true) : step.value;
+      createProperty(result, index, value);
     }
   } else {
     length = toLength(O.length);
     result = new C(length);
     for (;length > index; index++) {
-      createProperty(result, index, mapping ? mapfn(O[index], index) : O[index]);
+      value = mapping ? mapfn(O[index], index) : O[index];
+      createProperty(result, index, value);
     }
   }
   result.length = index;
@@ -732,9 +799,9 @@ var store = __webpack_require__("c6cd");
 (module.exports = function (key, value) {
   return store[key] || (store[key] = value !== undefined ? value : {});
 })('versions', []).push({
-  version: '3.6.0',
+  version: '3.6.5',
   mode: IS_PURE ? 'pure' : 'global',
-  copyright: '© 2019 Denis Pushkarev (zloirock.ru)'
+  copyright: '© 2020 Denis Pushkarev (zloirock.ru)'
 });
 
 
@@ -758,51 +825,6 @@ module.exports = getBuiltIn('Reflect', 'ownKeys') || function ownKeys(it) {
 
 /***/ }),
 
-/***/ "5899":
-/***/ (function(module, exports) {
-
-// a string of all valid unicode whitespaces
-// eslint-disable-next-line max-len
-module.exports = '\u0009\u000A\u000B\u000C\u000D\u0020\u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\u2028\u2029\uFEFF';
-
-
-/***/ }),
-
-/***/ "58a8":
-/***/ (function(module, exports, __webpack_require__) {
-
-var requireObjectCoercible = __webpack_require__("1d80");
-var whitespaces = __webpack_require__("5899");
-
-var whitespace = '[' + whitespaces + ']';
-var ltrim = RegExp('^' + whitespace + whitespace + '*');
-var rtrim = RegExp(whitespace + whitespace + '*$');
-
-// `String.prototype.{ trim, trimStart, trimEnd, trimLeft, trimRight }` methods implementation
-var createMethod = function (TYPE) {
-  return function ($this) {
-    var string = String(requireObjectCoercible($this));
-    if (TYPE & 1) string = string.replace(ltrim, '');
-    if (TYPE & 2) string = string.replace(rtrim, '');
-    return string;
-  };
-};
-
-module.exports = {
-  // `String.prototype.{ trimLeft, trimStart }` methods
-  // https://tc39.github.io/ecma262/#sec-string.prototype.trimstart
-  start: createMethod(1),
-  // `String.prototype.{ trimRight, trimEnd }` methods
-  // https://tc39.github.io/ecma262/#sec-string.prototype.trimend
-  end: createMethod(2),
-  // `String.prototype.trim` method
-  // https://tc39.github.io/ecma262/#sec-string.prototype.trim
-  trim: createMethod(3)
-};
-
-
-/***/ }),
-
 /***/ "5c6c":
 /***/ (function(module, exports) {
 
@@ -818,29 +840,62 @@ module.exports = function (bitmap, value) {
 
 /***/ }),
 
-/***/ "60ae":
+/***/ "60da":
 /***/ (function(module, exports, __webpack_require__) {
 
-var global = __webpack_require__("da84");
-var userAgent = __webpack_require__("b39a");
+"use strict";
 
-var process = global.process;
-var versions = process && process.versions;
-var v8 = versions && versions.v8;
-var match, version;
+var DESCRIPTORS = __webpack_require__("83ab");
+var fails = __webpack_require__("d039");
+var objectKeys = __webpack_require__("df75");
+var getOwnPropertySymbolsModule = __webpack_require__("7418");
+var propertyIsEnumerableModule = __webpack_require__("d1e7");
+var toObject = __webpack_require__("7b0b");
+var IndexedObject = __webpack_require__("44ad");
 
-if (v8) {
-  match = v8.split('.');
-  version = match[0] + match[1];
-} else if (userAgent) {
-  match = userAgent.match(/Edge\/(\d+)/);
-  if (!match || match[1] >= 74) {
-    match = userAgent.match(/Chrome\/(\d+)/);
-    if (match) version = match[1];
-  }
-}
+var nativeAssign = Object.assign;
+var defineProperty = Object.defineProperty;
 
-module.exports = version && +version;
+// `Object.assign` method
+// https://tc39.github.io/ecma262/#sec-object.assign
+module.exports = !nativeAssign || fails(function () {
+  // should have correct order of operations (Edge bug)
+  if (DESCRIPTORS && nativeAssign({ b: 1 }, nativeAssign(defineProperty({}, 'a', {
+    enumerable: true,
+    get: function () {
+      defineProperty(this, 'b', {
+        value: 3,
+        enumerable: false
+      });
+    }
+  }), { b: 2 })).b !== 1) return true;
+  // should work with symbols and should have deterministic property order (V8 bug)
+  var A = {};
+  var B = {};
+  // eslint-disable-next-line no-undef
+  var symbol = Symbol();
+  var alphabet = 'abcdefghijklmnopqrst';
+  A[symbol] = 7;
+  alphabet.split('').forEach(function (chr) { B[chr] = chr; });
+  return nativeAssign({}, A)[symbol] != 7 || objectKeys(nativeAssign({}, B)).join('') != alphabet;
+}) ? function assign(target, source) { // eslint-disable-line no-unused-vars
+  var T = toObject(target);
+  var argumentsLength = arguments.length;
+  var index = 1;
+  var getOwnPropertySymbols = getOwnPropertySymbolsModule.f;
+  var propertyIsEnumerable = propertyIsEnumerableModule.f;
+  while (argumentsLength > index) {
+    var S = IndexedObject(arguments[index++]);
+    var keys = getOwnPropertySymbols ? objectKeys(S).concat(getOwnPropertySymbols(S)) : objectKeys(S);
+    var length = keys.length;
+    var j = 0;
+    var key;
+    while (length > j) {
+      key = keys[j++];
+      if (!DESCRIPTORS || propertyIsEnumerable.call(S, key)) T[key] = S[key];
+    }
+  } return T;
+} : nativeAssign;
 
 
 /***/ }),
@@ -1067,7 +1122,7 @@ exports.f = Object.getOwnPropertySymbols;
 
 var path = __webpack_require__("428f");
 var has = __webpack_require__("5135");
-var wrappedWellKnownSymbolModule = __webpack_require__("c032");
+var wrappedWellKnownSymbolModule = __webpack_require__("e538");
 var defineProperty = __webpack_require__("9bf2").f;
 
 module.exports = function (NAME) {
@@ -1353,7 +1408,7 @@ var fails = __webpack_require__("d039");
 
 // Thank's IE8 for his funny defineProperty
 module.exports = !fails(function () {
-  return Object.defineProperty({}, 'a', { get: function () { return 7; } }).a != 7;
+  return Object.defineProperty({}, 1, { get: function () { return 7; } })[1] != 7;
 });
 
 
@@ -1383,6 +1438,84 @@ module.exports = function (object, key, value) {
 module.exports = function (it) {
   return typeof it === 'object' ? it !== null : typeof it === 'function';
 };
+
+
+/***/ }),
+
+/***/ "8875":
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// addapted from the document.currentScript polyfill by Adam Miller
+// MIT license
+// source: https://github.com/amiller-gh/currentScript-polyfill
+
+// added support for Firefox https://bugzilla.mozilla.org/show_bug.cgi?id=1620505
+
+(function (root, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else {}
+}(typeof self !== 'undefined' ? self : this, function () {
+  function getCurrentScript () {
+    if (document.currentScript) {
+      return document.currentScript
+    }
+  
+    // IE 8-10 support script readyState
+    // IE 11+ & Firefox support stack trace
+    try {
+      throw new Error();
+    }
+    catch (err) {
+      // Find the second match for the "at" string to get file src url from stack.
+      var ieStackRegExp = /.*at [^(]*\((.*):(.+):(.+)\)$/ig,
+        ffStackRegExp = /@([^@]*):(\d+):(\d+)\s*$/ig,
+        stackDetails = ieStackRegExp.exec(err.stack) || ffStackRegExp.exec(err.stack),
+        scriptLocation = (stackDetails && stackDetails[1]) || false,
+        line = (stackDetails && stackDetails[2]) || false,
+        currentLocation = document.location.href.replace(document.location.hash, ''),
+        pageSource,
+        inlineScriptSourceRegExp,
+        inlineScriptSource,
+        scripts = document.getElementsByTagName('script'); // Live NodeList collection
+  
+      if (scriptLocation === currentLocation) {
+        pageSource = document.documentElement.outerHTML;
+        inlineScriptSourceRegExp = new RegExp('(?:[^\\n]+?\\n){0,' + (line - 2) + '}[^<]*<script>([\\d\\D]*?)<\\/script>[\\d\\D]*', 'i');
+        inlineScriptSource = pageSource.replace(inlineScriptSourceRegExp, '$1').trim();
+      }
+  
+      for (var i = 0; i < scripts.length; i++) {
+        // If ready state is interactive, return the script tag
+        if (scripts[i].readyState === 'interactive') {
+          return scripts[i];
+        }
+  
+        // If src matches, return the script tag
+        if (scripts[i].src === scriptLocation) {
+          return scripts[i];
+        }
+  
+        // If inline source matches, return the script tag
+        if (
+          scriptLocation === currentLocation &&
+          scripts[i].innerHTML &&
+          scripts[i].innerHTML.trim() === inlineScriptSource
+        ) {
+          return scripts[i];
+        }
+      }
+  
+      // If no match, return null
+      return null;
+    }
+  };
+
+  return getCurrentScript
+}));
 
 
 /***/ }),
@@ -1543,16 +1676,16 @@ module.exports = function (IteratorConstructor, NAME, next) {
 var $ = __webpack_require__("23e7");
 var IndexedObject = __webpack_require__("44ad");
 var toIndexedObject = __webpack_require__("fc6a");
-var sloppyArrayMethod = __webpack_require__("b301");
+var arrayMethodIsStrict = __webpack_require__("a640");
 
 var nativeJoin = [].join;
 
 var ES3_STRINGS = IndexedObject != Object;
-var SLOPPY_METHOD = sloppyArrayMethod('join', ',');
+var STRICT_METHOD = arrayMethodIsStrict('join', ',');
 
 // `Array.prototype.join` method
 // https://tc39.github.io/ecma262/#sec-array.prototype.join
-$({ target: 'Array', proto: true, forced: ES3_STRINGS || SLOPPY_METHOD }, {
+$({ target: 'Array', proto: true, forced: ES3_STRINGS || !STRICT_METHOD }, {
   join: function join(separator) {
     return nativeJoin.call(toIndexedObject(this), separator === undefined ? ',' : separator);
   }
@@ -1597,7 +1730,7 @@ var sharedKey = __webpack_require__("f772");
 var hiddenKeys = __webpack_require__("d012");
 var uid = __webpack_require__("90e3");
 var wellKnownSymbol = __webpack_require__("b622");
-var wrappedWellKnownSymbolModule = __webpack_require__("c032");
+var wrappedWellKnownSymbolModule = __webpack_require__("e538");
 var defineWellKnownSymbol = __webpack_require__("746f");
 var setToStringTag = __webpack_require__("d44e");
 var InternalStateModule = __webpack_require__("69f3");
@@ -1650,7 +1783,7 @@ var wrap = function (tag, description) {
   return symbol;
 };
 
-var isSymbol = NATIVE_SYMBOL && typeof $Symbol.iterator == 'symbol' ? function (it) {
+var isSymbol = USE_SYMBOL_AS_UID ? function (it) {
   return typeof it == 'symbol';
 } : function (it) {
   return Object(it) instanceof $Symbol;
@@ -1745,11 +1878,19 @@ if (!NATIVE_SYMBOL) {
     return getInternalState(this).tag;
   });
 
+  redefine($Symbol, 'withoutSetter', function (description) {
+    return wrap(uid(description), description);
+  });
+
   propertyIsEnumerableModule.f = $propertyIsEnumerable;
   definePropertyModule.f = $defineProperty;
   getOwnPropertyDescriptorModule.f = $getOwnPropertyDescriptor;
   getOwnPropertyNamesModule.f = getOwnPropertyNamesExternal.f = $getOwnPropertyNames;
   getOwnPropertySymbolsModule.f = $getOwnPropertySymbols;
+
+  wrappedWellKnownSymbolModule.f = function (name) {
+    return wrap(wellKnownSymbol(name), name);
+  };
 
   if (DESCRIPTORS) {
     // https://github.com/tc39/proposal-Symbol-description
@@ -1763,12 +1904,6 @@ if (!NATIVE_SYMBOL) {
       redefine(ObjectPrototype, 'propertyIsEnumerable', $propertyIsEnumerable, { unsafe: true });
     }
   }
-}
-
-if (!USE_SYMBOL_AS_UID) {
-  wrappedWellKnownSymbolModule.f = function (name) {
-    return wrap(wellKnownSymbol(name), name);
-  };
 }
 
 $({ global: true, wrap: true, forced: !NATIVE_SYMBOL, sham: !NATIVE_SYMBOL }, {
@@ -1898,6 +2033,24 @@ $({ target: 'Array', stat: true, forced: INCORRECT_ITERATION }, {
 
 /***/ }),
 
+/***/ "a640":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var fails = __webpack_require__("d039");
+
+module.exports = function (METHOD_NAME, argument) {
+  var method = [][METHOD_NAME];
+  return !!method && fails(function () {
+    // eslint-disable-next-line no-useless-call,no-throw-literal
+    method.call(null, argument || function () { throw 1; }, 1);
+  });
+};
+
+
+/***/ }),
+
 /***/ "a691":
 /***/ (function(module, exports) {
 
@@ -1932,6 +2085,40 @@ module.exports = function () {
   if (that.unicode) result += 'u';
   if (that.sticky) result += 'y';
   return result;
+};
+
+
+/***/ }),
+
+/***/ "ae40":
+/***/ (function(module, exports, __webpack_require__) {
+
+var DESCRIPTORS = __webpack_require__("83ab");
+var fails = __webpack_require__("d039");
+var has = __webpack_require__("5135");
+
+var defineProperty = Object.defineProperty;
+var cache = {};
+
+var thrower = function (it) { throw it; };
+
+module.exports = function (METHOD_NAME, options) {
+  if (has(cache, METHOD_NAME)) return cache[METHOD_NAME];
+  if (!options) options = {};
+  var method = [][METHOD_NAME];
+  var ACCESSORS = has(options, 'ACCESSORS') ? options.ACCESSORS : false;
+  var argument0 = has(options, 0) ? options[0] : thrower;
+  var argument1 = has(options, 1) ? options[1] : undefined;
+
+  return cache[METHOD_NAME] = !!method && !fails(function () {
+    if (ACCESSORS && !DESCRIPTORS) return true;
+    var O = { length: -1 };
+
+    if (ACCESSORS) defineProperty(O, 1, { enumerable: true, get: thrower });
+    else O[1] = 1;
+
+    method.call(O, argument0, argument1);
+  });
 };
 
 
@@ -1999,30 +2186,31 @@ module.exports = TO_STRING_TAG_SUPPORT ? {}.toString : function toString() {
 
 /***/ }),
 
-/***/ "b301":
+/***/ "b0c0":
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+var DESCRIPTORS = __webpack_require__("83ab");
+var defineProperty = __webpack_require__("9bf2").f;
 
-var fails = __webpack_require__("d039");
+var FunctionPrototype = Function.prototype;
+var FunctionPrototypeToString = FunctionPrototype.toString;
+var nameRE = /^\s*function ([^ (]*)/;
+var NAME = 'name';
 
-module.exports = function (METHOD_NAME, argument) {
-  var method = [][METHOD_NAME];
-  return !method || !fails(function () {
-    // eslint-disable-next-line no-useless-call,no-throw-literal
-    method.call(null, argument || function () { throw 1; }, 1);
+// Function instances `.name` property
+// https://tc39.github.io/ecma262/#sec-function-instances-name
+if (DESCRIPTORS && !(NAME in FunctionPrototype)) {
+  defineProperty(FunctionPrototype, NAME, {
+    configurable: true,
+    get: function () {
+      try {
+        return FunctionPrototypeToString.call(this).match(nameRE)[1];
+      } catch (error) {
+        return '';
+      }
+    }
   });
-};
-
-
-/***/ }),
-
-/***/ "b39a":
-/***/ (function(module, exports, __webpack_require__) {
-
-var getBuiltIn = __webpack_require__("d066");
-
-module.exports = getBuiltIn('navigator', 'userAgent') || '';
+}
 
 
 /***/ }),
@@ -2039,7 +2227,7 @@ var USE_SYMBOL_AS_UID = __webpack_require__("fdbf");
 
 var WellKnownSymbolsStore = shared('wks');
 var Symbol = global.Symbol;
-var createWellKnownSymbol = USE_SYMBOL_AS_UID ? Symbol : uid;
+var createWellKnownSymbol = USE_SYMBOL_AS_UID ? Symbol : Symbol && Symbol.withoutSetter || uid;
 
 module.exports = function (name) {
   if (!has(WellKnownSymbolsStore, name)) {
@@ -2075,7 +2263,7 @@ $({ target: 'Object', stat: true, forced: FAILS_ON_PRIMITIVES }, {
 /***/ "b727":
 /***/ (function(module, exports, __webpack_require__) {
 
-var bind = __webpack_require__("f8c2");
+var bind = __webpack_require__("0366");
 var IndexedObject = __webpack_require__("44ad");
 var toObject = __webpack_require__("7b0b");
 var toLength = __webpack_require__("50c4");
@@ -2140,16 +2328,6 @@ module.exports = {
   // https://tc39.github.io/ecma262/#sec-array.prototype.findIndex
   findIndex: createMethod(6)
 };
-
-
-/***/ }),
-
-/***/ "c032":
-/***/ (function(module, exports, __webpack_require__) {
-
-var wellKnownSymbol = __webpack_require__("b622");
-
-exports.f = wellKnownSymbol;
 
 
 /***/ }),
@@ -2292,6 +2470,21 @@ var EXISTS = isObject(document) && isObject(document.createElement);
 module.exports = function (it) {
   return EXISTS ? document.createElement(it) : {};
 };
+
+
+/***/ }),
+
+/***/ "cca6":
+/***/ (function(module, exports, __webpack_require__) {
+
+var $ = __webpack_require__("23e7");
+var assign = __webpack_require__("60da");
+
+// `Object.assign` method
+// https://tc39.github.io/ecma262/#sec-object.assign
+$({ target: 'Object', stat: true, forced: Object.assign !== assign }, {
+  assign: assign
+});
 
 
 /***/ }),
@@ -2458,14 +2651,12 @@ module.exports = function (it, TAG, STATIC) {
 
 var $ = __webpack_require__("23e7");
 var $map = __webpack_require__("b727").map;
-var fails = __webpack_require__("d039");
 var arrayMethodHasSpeciesSupport = __webpack_require__("1dde");
+var arrayMethodUsesToLength = __webpack_require__("ae40");
 
 var HAS_SPECIES_SUPPORT = arrayMethodHasSpeciesSupport('map');
 // FF49- issue
-var USES_TO_LENGTH = HAS_SPECIES_SUPPORT && !fails(function () {
-  [].map.call({ length: -1, 0: 1 }, function (it) { throw it; });
-});
+var USES_TO_LENGTH = arrayMethodUsesToLength('map');
 
 // `Array.prototype.map` method
 // https://tc39.github.io/ecma262/#sec-array.prototype.map
@@ -2651,21 +2842,6 @@ module.exports = !fails(function () {
 
 /***/ }),
 
-/***/ "e25e":
-/***/ (function(module, exports, __webpack_require__) {
-
-var $ = __webpack_require__("23e7");
-var parseIntImplementation = __webpack_require__("e583");
-
-// `parseInt` method
-// https://tc39.github.io/ecma262/#sec-parseint-string-radix
-$({ global: true, forced: parseInt != parseIntImplementation }, {
-  parseInt: parseIntImplementation
-});
-
-
-/***/ }),
-
 /***/ "e260":
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -2727,23 +2903,12 @@ addToUnscopables('entries');
 
 /***/ }),
 
-/***/ "e583":
+/***/ "e538":
 /***/ (function(module, exports, __webpack_require__) {
 
-var global = __webpack_require__("da84");
-var trim = __webpack_require__("58a8").trim;
-var whitespaces = __webpack_require__("5899");
+var wellKnownSymbol = __webpack_require__("b622");
 
-var nativeParseInt = global.parseInt;
-var hex = /^[+-]?0[Xx]/;
-var FORCED = nativeParseInt(whitespaces + '08') !== 8 || nativeParseInt(whitespaces + '0x16') !== 22;
-
-// `parseInt` method
-// https://tc39.github.io/ecma262/#sec-parseint-string-radix
-module.exports = FORCED ? function parseInt(string, radix) {
-  var S = trim(String(string));
-  return nativeParseInt(S, (radix >>> 0) || (hex.test(S) ? 16 : 10));
-} : nativeParseInt;
+exports.f = wellKnownSymbol;
 
 
 /***/ }),
@@ -2833,49 +2998,6 @@ module.exports = TO_STRING_TAG_SUPPORT ? classofRaw : function (it) {
 
 /***/ }),
 
-/***/ "f6fd":
-/***/ (function(module, exports) {
-
-// document.currentScript polyfill by Adam Miller
-
-// MIT license
-
-(function(document){
-  var currentScript = "currentScript",
-      scripts = document.getElementsByTagName('script'); // Live NodeList collection
-
-  // If browser needs currentScript polyfill, add get currentScript() to the document object
-  if (!(currentScript in document)) {
-    Object.defineProperty(document, currentScript, {
-      get: function(){
-
-        // IE 6-10 supports script readyState
-        // IE 10+ support stack trace
-        try { throw new Error(); }
-        catch (err) {
-
-          // Find the second match for the "at" string to get file src url from stack.
-          // Specifically works with the format of stack traces in IE.
-          var i, res = ((/.*at [^\(]*\((.*):.+:.+\)$/ig).exec(err.stack) || [false])[1];
-
-          // For all scripts on the page, if src matches or if ready state is interactive, return the script tag
-          for(i in scripts){
-            if(scripts[i].src == res || scripts[i].readyState == "interactive"){
-              return scripts[i];
-            }
-          }
-
-          // If no match, return null
-          return null;
-        }
-      }
-    });
-  }
-})(document);
-
-
-/***/ }),
-
 /***/ "f772":
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -2891,75 +3013,49 @@ module.exports = function (key) {
 
 /***/ }),
 
-/***/ "f8c2":
-/***/ (function(module, exports, __webpack_require__) {
-
-var aFunction = __webpack_require__("1c0b");
-
-// optional / simple context binding
-module.exports = function (fn, that, length) {
-  aFunction(fn);
-  if (that === undefined) return fn;
-  switch (length) {
-    case 0: return function () {
-      return fn.call(that);
-    };
-    case 1: return function (a) {
-      return fn.call(that, a);
-    };
-    case 2: return function (a, b) {
-      return fn.call(that, a, b);
-    };
-    case 3: return function (a, b, c) {
-      return fn.call(that, a, b, c);
-    };
-  }
-  return function (/* ...args */) {
-    return fn.apply(that, arguments);
-  };
-};
-
-
-/***/ }),
-
 /***/ "fb15":
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+// ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
-var d3_array_namespaceObject = {};
-__webpack_require__.r(d3_array_namespaceObject);
-__webpack_require__.d(d3_array_namespaceObject, "bisect", function() { return bisect; });
-__webpack_require__.d(d3_array_namespaceObject, "bisectRight", function() { return bisectRight; });
-__webpack_require__.d(d3_array_namespaceObject, "bisectLeft", function() { return bisectLeft; });
-__webpack_require__.d(d3_array_namespaceObject, "ascending", function() { return ascending; });
-__webpack_require__.d(d3_array_namespaceObject, "bisector", function() { return bisector; });
-__webpack_require__.d(d3_array_namespaceObject, "cross", function() { return cross; });
-__webpack_require__.d(d3_array_namespaceObject, "descending", function() { return descending; });
-__webpack_require__.d(d3_array_namespaceObject, "deviation", function() { return deviation; });
-__webpack_require__.d(d3_array_namespaceObject, "extent", function() { return extent; });
-__webpack_require__.d(d3_array_namespaceObject, "histogram", function() { return src_histogram; });
-__webpack_require__.d(d3_array_namespaceObject, "thresholdFreedmanDiaconis", function() { return freedmanDiaconis; });
-__webpack_require__.d(d3_array_namespaceObject, "thresholdScott", function() { return scott; });
-__webpack_require__.d(d3_array_namespaceObject, "thresholdSturges", function() { return sturges; });
-__webpack_require__.d(d3_array_namespaceObject, "max", function() { return src_max; });
-__webpack_require__.d(d3_array_namespaceObject, "mean", function() { return src_mean; });
-__webpack_require__.d(d3_array_namespaceObject, "median", function() { return median; });
-__webpack_require__.d(d3_array_namespaceObject, "merge", function() { return merge; });
-__webpack_require__.d(d3_array_namespaceObject, "min", function() { return src_min; });
-__webpack_require__.d(d3_array_namespaceObject, "pairs", function() { return pairs; });
-__webpack_require__.d(d3_array_namespaceObject, "permute", function() { return permute; });
-__webpack_require__.d(d3_array_namespaceObject, "quantile", function() { return quantile; });
-__webpack_require__.d(d3_array_namespaceObject, "range", function() { return src_range; });
-__webpack_require__.d(d3_array_namespaceObject, "scan", function() { return scan; });
-__webpack_require__.d(d3_array_namespaceObject, "shuffle", function() { return shuffle; });
-__webpack_require__.d(d3_array_namespaceObject, "sum", function() { return src_sum; });
-__webpack_require__.d(d3_array_namespaceObject, "ticks", function() { return ticks; });
-__webpack_require__.d(d3_array_namespaceObject, "tickIncrement", function() { return tickIncrement; });
-__webpack_require__.d(d3_array_namespaceObject, "tickStep", function() { return tickStep; });
-__webpack_require__.d(d3_array_namespaceObject, "transpose", function() { return src_transpose; });
-__webpack_require__.d(d3_array_namespaceObject, "variance", function() { return variance; });
-__webpack_require__.d(d3_array_namespaceObject, "zip", function() { return zip; });
+
+// NAMESPACE OBJECT: ./node_modules/d3-array/src/index.js
+var src_namespaceObject = {};
+__webpack_require__.r(src_namespaceObject);
+__webpack_require__.d(src_namespaceObject, "bisect", function() { return bisect; });
+__webpack_require__.d(src_namespaceObject, "bisectRight", function() { return bisectRight; });
+__webpack_require__.d(src_namespaceObject, "bisectLeft", function() { return bisectLeft; });
+__webpack_require__.d(src_namespaceObject, "ascending", function() { return ascending; });
+__webpack_require__.d(src_namespaceObject, "bisector", function() { return bisector; });
+__webpack_require__.d(src_namespaceObject, "cross", function() { return cross; });
+__webpack_require__.d(src_namespaceObject, "descending", function() { return descending; });
+__webpack_require__.d(src_namespaceObject, "deviation", function() { return deviation; });
+__webpack_require__.d(src_namespaceObject, "extent", function() { return extent; });
+__webpack_require__.d(src_namespaceObject, "histogram", function() { return src_histogram; });
+__webpack_require__.d(src_namespaceObject, "thresholdFreedmanDiaconis", function() { return freedmanDiaconis; });
+__webpack_require__.d(src_namespaceObject, "thresholdScott", function() { return scott; });
+__webpack_require__.d(src_namespaceObject, "thresholdSturges", function() { return sturges; });
+__webpack_require__.d(src_namespaceObject, "max", function() { return src_max; });
+__webpack_require__.d(src_namespaceObject, "mean", function() { return src_mean; });
+__webpack_require__.d(src_namespaceObject, "median", function() { return median; });
+__webpack_require__.d(src_namespaceObject, "merge", function() { return merge; });
+__webpack_require__.d(src_namespaceObject, "min", function() { return src_min; });
+__webpack_require__.d(src_namespaceObject, "pairs", function() { return pairs; });
+__webpack_require__.d(src_namespaceObject, "permute", function() { return permute; });
+__webpack_require__.d(src_namespaceObject, "quantile", function() { return quantile; });
+__webpack_require__.d(src_namespaceObject, "range", function() { return src_range; });
+__webpack_require__.d(src_namespaceObject, "scan", function() { return scan; });
+__webpack_require__.d(src_namespaceObject, "shuffle", function() { return shuffle; });
+__webpack_require__.d(src_namespaceObject, "sum", function() { return src_sum; });
+__webpack_require__.d(src_namespaceObject, "ticks", function() { return ticks; });
+__webpack_require__.d(src_namespaceObject, "tickIncrement", function() { return tickIncrement; });
+__webpack_require__.d(src_namespaceObject, "tickStep", function() { return tickStep; });
+__webpack_require__.d(src_namespaceObject, "transpose", function() { return src_transpose; });
+__webpack_require__.d(src_namespaceObject, "variance", function() { return variance; });
+__webpack_require__.d(src_namespaceObject, "zip", function() { return zip; });
+
+// NAMESPACE OBJECT: ./node_modules/d3-scale/index.js
 var d3_scale_namespaceObject = {};
 __webpack_require__.r(d3_scale_namespaceObject);
 __webpack_require__.d(d3_scale_namespaceObject, "scaleBand", function() { return band; });
@@ -2972,7 +3068,7 @@ __webpack_require__.d(d3_scale_namespaceObject, "scaleImplicit", function() { re
 __webpack_require__.d(d3_scale_namespaceObject, "scalePow", function() { return pow; });
 __webpack_require__.d(d3_scale_namespaceObject, "scaleSqrt", function() { return sqrt; });
 __webpack_require__.d(d3_scale_namespaceObject, "scaleQuantile", function() { return quantile_quantile; });
-__webpack_require__.d(d3_scale_namespaceObject, "scaleQuantize", function() { return quantize_quantize; });
+__webpack_require__.d(d3_scale_namespaceObject, "scaleQuantize", function() { return quantize; });
 __webpack_require__.d(d3_scale_namespaceObject, "scaleThreshold", function() { return threshold_threshold; });
 __webpack_require__.d(d3_scale_namespaceObject, "scaleTime", function() { return time; });
 __webpack_require__.d(d3_scale_namespaceObject, "scaleUtc", function() { return utcTime; });
@@ -2989,82 +3085,92 @@ __webpack_require__.d(d3_scale_namespaceObject, "interpolateMagma", function() {
 __webpack_require__.d(d3_scale_namespaceObject, "interpolateInferno", function() { return inferno; });
 __webpack_require__.d(d3_scale_namespaceObject, "interpolatePlasma", function() { return plasma; });
 __webpack_require__.d(d3_scale_namespaceObject, "scaleSequential", function() { return sequential; });
-var d3_shape_namespaceObject = {};
-__webpack_require__.r(d3_shape_namespaceObject);
-__webpack_require__.d(d3_shape_namespaceObject, "arc", function() { return src_arc; });
-__webpack_require__.d(d3_shape_namespaceObject, "area", function() { return src_area; });
-__webpack_require__.d(d3_shape_namespaceObject, "line", function() { return src_line; });
-__webpack_require__.d(d3_shape_namespaceObject, "pie", function() { return src_pie; });
-__webpack_require__.d(d3_shape_namespaceObject, "areaRadial", function() { return areaRadial; });
-__webpack_require__.d(d3_shape_namespaceObject, "radialArea", function() { return areaRadial; });
-__webpack_require__.d(d3_shape_namespaceObject, "lineRadial", function() { return src_lineRadial; });
-__webpack_require__.d(d3_shape_namespaceObject, "radialLine", function() { return src_lineRadial; });
-__webpack_require__.d(d3_shape_namespaceObject, "pointRadial", function() { return pointRadial; });
-__webpack_require__.d(d3_shape_namespaceObject, "linkHorizontal", function() { return linkHorizontal; });
-__webpack_require__.d(d3_shape_namespaceObject, "linkVertical", function() { return linkVertical; });
-__webpack_require__.d(d3_shape_namespaceObject, "linkRadial", function() { return linkRadial; });
-__webpack_require__.d(d3_shape_namespaceObject, "symbol", function() { return src_symbol; });
-__webpack_require__.d(d3_shape_namespaceObject, "symbols", function() { return symbols; });
-__webpack_require__.d(d3_shape_namespaceObject, "symbolCircle", function() { return circle; });
-__webpack_require__.d(d3_shape_namespaceObject, "symbolCross", function() { return symbol_cross; });
-__webpack_require__.d(d3_shape_namespaceObject, "symbolDiamond", function() { return diamond; });
-__webpack_require__.d(d3_shape_namespaceObject, "symbolSquare", function() { return square; });
-__webpack_require__.d(d3_shape_namespaceObject, "symbolStar", function() { return star; });
-__webpack_require__.d(d3_shape_namespaceObject, "symbolTriangle", function() { return triangle; });
-__webpack_require__.d(d3_shape_namespaceObject, "symbolWye", function() { return wye; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveBasisClosed", function() { return curve_basisClosed; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveBasisOpen", function() { return basisOpen; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveBasis", function() { return curve_basis; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveBundle", function() { return curve_bundle; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveCardinalClosed", function() { return cardinalClosed; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveCardinalOpen", function() { return cardinalOpen; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveCardinal", function() { return cardinal; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveCatmullRomClosed", function() { return catmullRomClosed; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveCatmullRomOpen", function() { return catmullRomOpen; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveCatmullRom", function() { return curve_catmullRom; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveLinearClosed", function() { return linearClosed; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveLinear", function() { return curve_linear; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveMonotoneX", function() { return monotoneX; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveMonotoneY", function() { return monotoneY; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveNatural", function() { return natural; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveStep", function() { return curve_step; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveStepAfter", function() { return stepAfter; });
-__webpack_require__.d(d3_shape_namespaceObject, "curveStepBefore", function() { return stepBefore; });
-__webpack_require__.d(d3_shape_namespaceObject, "stack", function() { return src_stack; });
-__webpack_require__.d(d3_shape_namespaceObject, "stackOffsetExpand", function() { return expand; });
-__webpack_require__.d(d3_shape_namespaceObject, "stackOffsetDiverging", function() { return diverging; });
-__webpack_require__.d(d3_shape_namespaceObject, "stackOffsetNone", function() { return none; });
-__webpack_require__.d(d3_shape_namespaceObject, "stackOffsetSilhouette", function() { return silhouette; });
-__webpack_require__.d(d3_shape_namespaceObject, "stackOffsetWiggle", function() { return wiggle; });
-__webpack_require__.d(d3_shape_namespaceObject, "stackOrderAscending", function() { return order_ascending; });
-__webpack_require__.d(d3_shape_namespaceObject, "stackOrderDescending", function() { return order_descending; });
-__webpack_require__.d(d3_shape_namespaceObject, "stackOrderInsideOut", function() { return insideOut; });
-__webpack_require__.d(d3_shape_namespaceObject, "stackOrderNone", function() { return order_none; });
-__webpack_require__.d(d3_shape_namespaceObject, "stackOrderReverse", function() { return order_reverse; });
+
+// NAMESPACE OBJECT: ./node_modules/d3-shape/src/index.js
+var d3_shape_src_namespaceObject = {};
+__webpack_require__.r(d3_shape_src_namespaceObject);
+__webpack_require__.d(d3_shape_src_namespaceObject, "arc", function() { return src_arc; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "area", function() { return src_area; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "line", function() { return src_line; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "pie", function() { return src_pie; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "areaRadial", function() { return areaRadial; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "radialArea", function() { return areaRadial; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "lineRadial", function() { return src_lineRadial; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "radialLine", function() { return src_lineRadial; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "pointRadial", function() { return pointRadial; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "linkHorizontal", function() { return linkHorizontal; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "linkVertical", function() { return linkVertical; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "linkRadial", function() { return linkRadial; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "symbol", function() { return src_symbol; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "symbols", function() { return symbols; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "symbolCircle", function() { return circle; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "symbolCross", function() { return symbol_cross; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "symbolDiamond", function() { return diamond; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "symbolSquare", function() { return square; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "symbolStar", function() { return star; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "symbolTriangle", function() { return triangle; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "symbolWye", function() { return wye; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveBasisClosed", function() { return curve_basisClosed; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveBasisOpen", function() { return basisOpen; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveBasis", function() { return curve_basis; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveBundle", function() { return curve_bundle; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveCardinalClosed", function() { return cardinalClosed; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveCardinalOpen", function() { return cardinalOpen; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveCardinal", function() { return cardinal; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveCatmullRomClosed", function() { return catmullRomClosed; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveCatmullRomOpen", function() { return catmullRomOpen; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveCatmullRom", function() { return curve_catmullRom; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveLinearClosed", function() { return linearClosed; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveLinear", function() { return curve_linear; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveMonotoneX", function() { return monotoneX; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveMonotoneY", function() { return monotoneY; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveNatural", function() { return natural; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveStep", function() { return curve_step; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveStepAfter", function() { return stepAfter; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "curveStepBefore", function() { return stepBefore; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stack", function() { return src_stack; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stackOffsetExpand", function() { return expand; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stackOffsetDiverging", function() { return diverging; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stackOffsetNone", function() { return none; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stackOffsetSilhouette", function() { return silhouette; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stackOffsetWiggle", function() { return wiggle; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stackOrderAppearance", function() { return appearance; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stackOrderAscending", function() { return order_ascending; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stackOrderDescending", function() { return order_descending; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stackOrderInsideOut", function() { return insideOut; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stackOrderNone", function() { return order_none; });
+__webpack_require__.d(d3_shape_src_namespaceObject, "stackOrderReverse", function() { return order_reverse; });
 
 // CONCATENATED MODULE: ./node_modules/@vue/cli-service/lib/commands/build/setPublicPath.js
 // This file is imported into lib/wc client bundles.
 
 if (typeof window !== 'undefined') {
+  var currentScript = window.document.currentScript
   if (true) {
-    __webpack_require__("f6fd")
+    var getCurrentScript = __webpack_require__("8875")
+    currentScript = getCurrentScript()
+
+    // for backward compatibility, because previously we directly included the polyfill
+    if (!('currentScript' in document)) {
+      Object.defineProperty(document, 'currentScript', { get: getCurrentScript })
+    }
   }
 
-  var setPublicPath_i
-  if ((setPublicPath_i = window.document.currentScript) && (setPublicPath_i = setPublicPath_i.src.match(/(.+\/)[^/]+\.js(\?.*)?$/))) {
-    __webpack_require__.p = setPublicPath_i[1] // eslint-disable-line
+  var src = currentScript && currentScript.src.match(/(.+\/)[^/]+\.js(\?.*)?$/)
+  if (src) {
+    __webpack_require__.p = src[1] // eslint-disable-line
   }
 }
 
 // Indicate to webpack that this file can be concatenated
 /* harmony default export */ var setPublicPath = (null);
 
-// CONCATENATED MODULE: ./node_modules/cache-loader/dist/cjs.js?{"cacheDirectory":"node_modules/.cache/vue-loader","cacheIdentifier":"b6224b8e-vue-loader-template"}!./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/pug-plain-loader!./node_modules/cache-loader/dist/cjs.js??ref--0-0!./node_modules/vue-loader/lib??vue-loader-options!./src/vue-d3-barchart.vue?vue&type=template&id=51e2fcd7&lang=pug&
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return (_vm.bars.length)?_c('svg',{staticClass:"d3-bar-chart",attrs:{"width":_vm.w,"height":_vm.h}},[(_vm.renderGradient)?_c('defs',[_c('linearGradient',{attrs:{"id":_vm.gradientId,"x1":"0","x2":"100%","y1":"0","y2":"0"}},_vm._l((_vm.bars),function(d,i){return _c('stop',{key:i,attrs:{"offset":d.percentX + "%","stop-color":d.color}})}))],1):_vm._e(),(_vm.opts.axis.linesY)?_c('g',{staticClass:"lines"},_vm._l((_vm.axisY),function(a,i){return _c('line',{staticClass:"line-y",attrs:{"x1":_vm.margin,"x2":_vm.w,"y1":a.y,"y2":a.y}})})):_vm._e(),(_vm.opts.axis)?_c('g',{staticClass:"axis"},[_c('line',{staticClass:"x-axis",attrs:{"x1":_vm.oXa,"x2":_vm.w,"y1":_vm.hh,"y2":_vm.hh}}),_c('line',{staticClass:"y-axis",attrs:{"x1":_vm.oXa,"x2":_vm.oXa,"y1":"0","y2":_vm.hh}}),_c('g',{staticClass:"axis-labels"},[_vm._l((_vm.axisY),function(a,i){return [(_vm.opts.axis.valuesY)?_c('text',{staticClass:"axis-label",attrs:{"x":"0","y":a.y}},[_vm._v(_vm._s(a.value))]):_vm._e()]})],2)]):_vm._e(),(_vm.opts.curveBack)?_c('g',{staticClass:"curve-back"},[_c('path',{style:(_vm.curveBackStyle),attrs:{"d":_vm.curve(_vm.opts.curveBack),"stroke":_vm.curveBackStyle.stroke,"fill":_vm.curveBackStyle.fill}})]):_vm._e(),_c('g',{staticClass:"bars"},[_vm._l((_vm.bars),function(d,i){return [(_vm.opts.bars)?_c('rect',{staticClass:"bar",style:(_vm.barStyle(d)),attrs:{"width":d.w,"height":d.y,"x":_vm.barX(d),"y":_vm.barY(d)},on:{"click":function($event){_vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.curve)?_c('g',{staticClass:"curve"},[_c('path',{style:(_vm.curveStyle),attrs:{"d":_vm.curve(_vm.opts.curve),"stroke":_vm.curveStyle.stroke,"fill":_vm.curveStyle.fill}})]):_vm._e(),_c('g',{staticClass:"dummies"},[_vm._l((_vm.dummyBars),function(d,i){return [((_vm.opts.tip || _vm.opts.line))?_c('rect',{staticClass:"dummy-bar",class:(_vm.opts.bars) ? "has-bars":"",attrs:{"width":d.w,"height":_vm.h,"x":_vm.barX(d),"y":"0"},on:{"mouseover":function($event){$event.preventDefault();_vm.startMove($event,d)},"mouseleave":function($event){_vm.stopMove($event,d)},"click":function($event){_vm.barClick($event,d)},"touchstart":function($event){_vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.marks)?_c('g',{staticClass:"marks"},[_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type === "square")?_c('rect',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"x":_vm.barX(d) + (_vm.barW /2) - (_vm.markSize /2),"y":_vm.barY(d)-(_vm.markSize /2),"width":_vm.markSize,"height":_vm.markSize}}):_vm._e()}),_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type !=="square")?_c('circle',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"r":_vm.markSize / 2,"cx":_vm.barX(d) + _vm.barW /2,"cy":_vm.barY(d)}}):_vm._e()})],2):_vm._e(),(_vm.opts.line)?_c('g',{directives:[{name:"show",rawName:"v-show",value:(_vm.over),expression:"over"}],staticClass:"chart-line"},[_c('line',{staticClass:"line",attrs:{"x1":_vm.lineX,"x2":_vm.lineX,"y1":0,"y2":_vm.h - _vm.margin}})]):_vm._e(),(_vm.opts.tip && _vm.over)?_c('g',{staticClass:"chart-tip"},[(_vm.opts.tipBack)?_c('rect',{staticClass:"chart-tip-back",attrs:{"x":_vm.lineX + _vm.fontSize/2,"y":0,"width":_vm.labelW + "ex","height":_vm.label.length + .25 + "em","rx":_vm.labelW / 5,"ry":_vm.label.lenght},on:{"touchstart":function($event){_vm.barClick(_vm.over)}}}):_vm._e(),_c('text',{staticClass:"label",attrs:{"x":_vm.lineX + _vm.fontSize,"y":"0","font-size":_vm.fontSize}},_vm._l((_vm.label),function(line,index){return _c('tspan',{key:index,staticClass:"label-line",class:line.css,style:(line.style),attrs:{"x":_vm.lineX + _vm.fontSize,"dy":"1.2em"}},[_vm._v(_vm._s(line.txt))])}))]):_vm._e()]):_vm._e()}
+// CONCATENATED MODULE: ./node_modules/cache-loader/dist/cjs.js?{"cacheDirectory":"node_modules/.cache/vue-loader","cacheIdentifier":"7c62df0f-vue-loader-template"}!./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/pug-plain-loader!./node_modules/cache-loader/dist/cjs.js??ref--0-0!./node_modules/vue-loader/lib??vue-loader-options!./src/vue-d3-barchart.vue?vue&type=template&id=3cf36c04&lang=pug&
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return (_vm.bars.length)?_c('svg',{staticClass:"d3-bar-chart",attrs:{"width":_vm.w,"height":_vm.h}},[(_vm.renderGradient)?_c('defs',[_c('linearGradient',{attrs:{"id":_vm.gradientId,"x1":"0","x2":"100%","y1":"0","y2":"0"}},_vm._l((_vm.bars),function(d,i){return _c('stop',{key:i,attrs:{"offset":d.percentX + "%","stop-color":d.color}})}),1)],1):_vm._e(),(_vm.opts.axis.linesY)?_c('g',{staticClass:"lines"},_vm._l((_vm.axisY),function(a,i){return _c('line',{staticClass:"line-y",attrs:{"x1":_vm.margin,"x2":_vm.w,"y1":a.y,"y2":a.y}})}),0):_vm._e(),(_vm.opts.axis)?_c('g',{staticClass:"axis"},[_c('line',{staticClass:"x-axis",attrs:{"x1":_vm.oXa,"x2":_vm.w,"y1":_vm.hh,"y2":_vm.hh}}),_c('line',{staticClass:"y-axis",attrs:{"x1":_vm.oXa,"x2":_vm.oXa,"y1":"0","y2":_vm.hh}}),_c('g',{staticClass:"axis-labels"},[_vm._l((_vm.axisY),function(a,i){return [(_vm.opts.axis.valuesY)?_c('text',{staticClass:"axis-label",attrs:{"x":"0","y":a.y}},[_vm._v(_vm._s(a.value))]):_vm._e()]})],2)]):_vm._e(),(_vm.opts.curveBack)?_c('g',{staticClass:"curve-back"},[_c('path',{style:(_vm.curveBackStyle),attrs:{"d":_vm.curve(_vm.opts.curveBack),"stroke":_vm.curveBackStyle.stroke,"fill":_vm.curveBackStyle.fill}})]):_vm._e(),_c('g',{staticClass:"bars"},[_vm._l((_vm.bars),function(d,i){return [(_vm.opts.bars)?_c('rect',{staticClass:"bar",style:(_vm.barStyle(d)),attrs:{"width":d.w,"height":d.y,"x":_vm.barX(d),"y":_vm.barY(d)},on:{"click":function($event){return _vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.curve)?_c('g',{staticClass:"curve"},[_c('path',{style:(_vm.curveStyle),attrs:{"d":_vm.curve(_vm.opts.curve),"stroke":_vm.curveStyle.stroke,"fill":_vm.curveStyle.fill}})]):_vm._e(),_c('g',{staticClass:"dummies"},[_vm._l((_vm.dummyBars),function(d,i){return [((_vm.opts.tip || _vm.opts.line))?_c('rect',{staticClass:"dummy-bar",class:(_vm.opts.bars) ? "has-bars":"",attrs:{"width":d.w,"height":_vm.h,"x":_vm.barX(d),"y":"0"},on:{"mouseover":function($event){$event.preventDefault();return _vm.startMove($event,d)},"mouseleave":function($event){return _vm.stopMove($event,d)},"click":function($event){return _vm.barClick($event,d)},"touchstart":function($event){return _vm.barClick($event,d)}}}):_vm._e()]})],2),(_vm.opts.marks)?_c('g',{staticClass:"marks"},[_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type === "square")?_c('rect',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"x":_vm.barX(d) + (_vm.barW /2) - (_vm.markSize /2),"y":_vm.barY(d)-(_vm.markSize /2),"width":_vm.markSize,"height":_vm.markSize}}):_vm._e()}),_vm._l((_vm.bars),function(d,i){return (_vm.opts.marks.type !=="square")?_c('circle',{key:i,staticClass:"mark",style:(_vm.markStyle(d)),attrs:{"r":_vm.markSize / 2,"cx":_vm.barX(d) + _vm.barW /2,"cy":_vm.barY(d)}}):_vm._e()})],2):_vm._e(),(_vm.opts.line)?_c('g',{directives:[{name:"show",rawName:"v-show",value:(_vm.over),expression:"over"}],staticClass:"chart-line"},[_c('line',{staticClass:"line",attrs:{"x1":_vm.lineX,"x2":_vm.lineX,"y1":0,"y2":_vm.h - _vm.margin}})]):_vm._e(),(_vm.opts.tip && _vm.over)?_c('g',{staticClass:"chart-tip"},[(_vm.opts.tipBack)?_c('rect',{staticClass:"chart-tip-back",attrs:{"x":_vm.lineX + _vm.fontSize/2,"y":0,"width":_vm.labelW + "ex","height":_vm.label.length + .25 + "em","rx":_vm.labelW / 5,"ry":_vm.label.lenght},on:{"touchstart":function($event){return _vm.barClick(_vm.over)}}}):_vm._e(),_c('text',{staticClass:"label",attrs:{"x":_vm.lineX + _vm.fontSize,"y":"0","font-size":_vm.fontSize}},_vm._l((_vm.label),function(line,index){return _c('tspan',{key:index,staticClass:"label-line",class:line.css,style:(line.style),attrs:{"x":_vm.lineX + _vm.fontSize,"dy":"1.2em"}},[_vm._v(_vm._s(line.txt))])}),0)]):_vm._e()]):_vm._e()}
 var staticRenderFns = []
 
 
-// CONCATENATED MODULE: ./src/vue-d3-barchart.vue?vue&type=template&id=51e2fcd7&lang=pug&
+// CONCATENATED MODULE: ./src/vue-d3-barchart.vue?vue&type=template&id=3cf36c04&lang=pug&
 
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.array.fill.js
 var es_array_fill = __webpack_require__("cb29");
@@ -3075,6 +3181,9 @@ var es_array_join = __webpack_require__("a15b");
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.array.map.js
 var es_array_map = __webpack_require__("d81d");
 
+// EXTERNAL MODULE: ./node_modules/core-js/modules/es.object.assign.js
+var es_object_assign = __webpack_require__("cca6");
+
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.object.keys.js
 var es_object_keys = __webpack_require__("b64b");
 
@@ -3084,21 +3193,23 @@ var es_object_to_string = __webpack_require__("d3b7");
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.object.values.js
 var es_object_values = __webpack_require__("07ac");
 
-// EXTERNAL MODULE: ./node_modules/core-js/modules/es.parse-int.js
-var es_parse_int = __webpack_require__("e25e");
-
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.regexp.to-string.js
 var es_regexp_to_string = __webpack_require__("25f0");
 
-// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/arrayWithoutHoles.js
-function _arrayWithoutHoles(arr) {
-  if (Array.isArray(arr)) {
-    for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) {
-      arr2[i] = arr[i];
-    }
+// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/arrayLikeToArray.js
+function _arrayLikeToArray(arr, len) {
+  if (len == null || len > arr.length) len = arr.length;
 
-    return arr2;
+  for (var i = 0, arr2 = new Array(len); i < len; i++) {
+    arr2[i] = arr[i];
   }
+
+  return arr2;
+}
+// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/arrayWithoutHoles.js
+
+function _arrayWithoutHoles(arr) {
+  if (Array.isArray(arr)) return _arrayLikeToArray(arr);
 }
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.symbol.js
 var es_symbol = __webpack_require__("a4d3");
@@ -3130,20 +3241,42 @@ var web_dom_collections_iterator = __webpack_require__("ddb0");
 
 
 
-
 function _iterableToArray(iter) {
-  if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+  if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
+}
+// EXTERNAL MODULE: ./node_modules/core-js/modules/es.array.slice.js
+var es_array_slice = __webpack_require__("fb6a");
+
+// EXTERNAL MODULE: ./node_modules/core-js/modules/es.function.name.js
+var es_function_name = __webpack_require__("b0c0");
+
+// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/unsupportedIterableToArray.js
+
+
+
+
+
+
+
+function _unsupportedIterableToArray(o, minLen) {
+  if (!o) return;
+  if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+  var n = Object.prototype.toString.call(o).slice(8, -1);
+  if (n === "Object" && o.constructor) n = o.constructor.name;
+  if (n === "Map" || n === "Set") return Array.from(o);
+  if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
 }
 // CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/nonIterableSpread.js
 function _nonIterableSpread() {
-  throw new TypeError("Invalid attempt to spread non-iterable instance");
+  throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 }
 // CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/toConsumableArray.js
 
 
 
+
 function _toConsumableArray(arr) {
-  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
+  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
 }
 // CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/typeof.js
 
@@ -3153,17 +3286,16 @@ function _toConsumableArray(arr) {
 
 
 
-
-function _typeof2(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof2 = function _typeof2(obj) { return typeof obj; }; } else { _typeof2 = function _typeof2(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof2(obj); }
-
 function _typeof(obj) {
-  if (typeof Symbol === "function" && _typeof2(Symbol.iterator) === "symbol") {
+  "@babel/helpers - typeof";
+
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
     _typeof = function _typeof(obj) {
-      return _typeof2(obj);
+      return typeof obj;
     };
   } else {
     _typeof = function _typeof(obj) {
-      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : _typeof2(obj);
+      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
     };
   }
 
@@ -3469,7 +3601,7 @@ function tickStep(start, stop, count) {
     // Convert number of thresholds into uniform thresholds.
     if (!Array.isArray(tz)) {
       tz = tickStep(x0, x1, tz);
-      tz = src_range(Math.ceil(x0 / tz) * tz, Math.floor(x1 / tz) * tz, tz); // exclusive
+      tz = src_range(Math.ceil(x0 / tz) * tz, x1, tz); // exclusive
     }
 
     // Remove any thresholds outside the domain.
@@ -3790,7 +3922,7 @@ function transpose_length(d) {
   return src_transpose(arguments);
 });
 
-// CONCATENATED MODULE: ./node_modules/d3-array/index.js
+// CONCATENATED MODULE: ./node_modules/d3-array/src/index.js
 
 
 
@@ -4033,7 +4165,7 @@ function set(object, f) {
   return entries;
 });
 
-// CONCATENATED MODULE: ./node_modules/d3-collection/index.js
+// CONCATENATED MODULE: ./node_modules/d3-collection/src/index.js
 
 
 
@@ -4198,6 +4330,13 @@ function point() {
   return pointish(band().paddingInner(1));
 }
 
+// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/number.js
+/* harmony default export */ var src_number = (function(a, b) {
+  return a = +a, b = +b, function(t) {
+    return a * (1 - t) + b * t;
+  };
+});
+
 // CONCATENATED MODULE: ./node_modules/d3-color/src/define.js
 /* harmony default export */ var define = (function(constructor, factory, prototype) {
   constructor.prototype = factory.prototype = prototype;
@@ -4221,8 +4360,7 @@ var brighter = 1 / darker;
 var reI = "\\s*([+-]?\\d+)\\s*",
     reN = "\\s*([+-]?\\d*\\.?\\d+(?:[eE][+-]?\\d+)?)\\s*",
     reP = "\\s*([+-]?\\d*\\.?\\d+(?:[eE][+-]?\\d+)?)%\\s*",
-    reHex3 = /^#([0-9a-f]{3})$/,
-    reHex6 = /^#([0-9a-f]{6})$/,
+    reHex = /^#([0-9a-f]{3,8})$/,
     reRgbInteger = new RegExp("^rgb\\(" + [reI, reI, reI] + "\\)$"),
     reRgbPercent = new RegExp("^rgb\\(" + [reP, reP, reP] + "\\)$"),
     reRgbaInteger = new RegExp("^rgba\\(" + [reI, reI, reI, reN] + "\\)$"),
@@ -4382,29 +4520,46 @@ var named = {
 };
 
 define(Color, color_color, {
+  copy: function(channels) {
+    return Object.assign(new this.constructor, this, channels);
+  },
   displayable: function() {
     return this.rgb().displayable();
   },
-  hex: function() {
-    return this.rgb().hex();
-  },
-  toString: function() {
-    return this.rgb() + "";
-  }
+  hex: color_formatHex, // Deprecated! Use color.formatHex.
+  formatHex: color_formatHex,
+  formatHsl: color_formatHsl,
+  formatRgb: color_formatRgb,
+  toString: color_formatRgb
 });
 
+function color_formatHex() {
+  return this.rgb().formatHex();
+}
+
+function color_formatHsl() {
+  return hslConvert(this).formatHsl();
+}
+
+function color_formatRgb() {
+  return this.rgb().formatRgb();
+}
+
 function color_color(format) {
-  var m;
+  var m, l;
   format = (format + "").trim().toLowerCase();
-  return (m = reHex3.exec(format)) ? (m = parseInt(m[1], 16), new Rgb((m >> 8 & 0xf) | (m >> 4 & 0x0f0), (m >> 4 & 0xf) | (m & 0xf0), ((m & 0xf) << 4) | (m & 0xf), 1)) // #f00
-      : (m = reHex6.exec(format)) ? rgbn(parseInt(m[1], 16)) // #ff0000
+  return (m = reHex.exec(format)) ? (l = m[1].length, m = parseInt(m[1], 16), l === 6 ? rgbn(m) // #ff0000
+      : l === 3 ? new Rgb((m >> 8 & 0xf) | (m >> 4 & 0xf0), (m >> 4 & 0xf) | (m & 0xf0), ((m & 0xf) << 4) | (m & 0xf), 1) // #f00
+      : l === 8 ? rgba(m >> 24 & 0xff, m >> 16 & 0xff, m >> 8 & 0xff, (m & 0xff) / 0xff) // #ff000000
+      : l === 4 ? rgba((m >> 12 & 0xf) | (m >> 8 & 0xf0), (m >> 8 & 0xf) | (m >> 4 & 0xf0), (m >> 4 & 0xf) | (m & 0xf0), (((m & 0xf) << 4) | (m & 0xf)) / 0xff) // #f000
+      : null) // invalid hex
       : (m = reRgbInteger.exec(format)) ? new Rgb(m[1], m[2], m[3], 1) // rgb(255, 0, 0)
       : (m = reRgbPercent.exec(format)) ? new Rgb(m[1] * 255 / 100, m[2] * 255 / 100, m[3] * 255 / 100, 1) // rgb(100%, 0%, 0%)
       : (m = reRgbaInteger.exec(format)) ? rgba(m[1], m[2], m[3], m[4]) // rgba(255, 0, 0, 1)
       : (m = reRgbaPercent.exec(format)) ? rgba(m[1] * 255 / 100, m[2] * 255 / 100, m[3] * 255 / 100, m[4]) // rgb(100%, 0%, 0%, 1)
       : (m = reHslPercent.exec(format)) ? hsla(m[1], m[2] / 100, m[3] / 100, 1) // hsl(120, 50%, 50%)
       : (m = reHslaPercent.exec(format)) ? hsla(m[1], m[2] / 100, m[3] / 100, m[4]) // hsla(120, 50%, 50%, 1)
-      : named.hasOwnProperty(format) ? rgbn(named[format])
+      : named.hasOwnProperty(format) ? rgbn(named[format]) // eslint-disable-line no-prototype-builtins
       : format === "transparent" ? new Rgb(NaN, NaN, NaN, 0)
       : null;
 }
@@ -4449,23 +4604,29 @@ define(Rgb, color_rgb, extend(Color, {
     return this;
   },
   displayable: function() {
-    return (0 <= this.r && this.r <= 255)
-        && (0 <= this.g && this.g <= 255)
-        && (0 <= this.b && this.b <= 255)
+    return (-0.5 <= this.r && this.r < 255.5)
+        && (-0.5 <= this.g && this.g < 255.5)
+        && (-0.5 <= this.b && this.b < 255.5)
         && (0 <= this.opacity && this.opacity <= 1);
   },
-  hex: function() {
-    return "#" + hex(this.r) + hex(this.g) + hex(this.b);
-  },
-  toString: function() {
-    var a = this.opacity; a = isNaN(a) ? 1 : Math.max(0, Math.min(1, a));
-    return (a === 1 ? "rgb(" : "rgba(")
-        + Math.max(0, Math.min(255, Math.round(this.r) || 0)) + ", "
-        + Math.max(0, Math.min(255, Math.round(this.g) || 0)) + ", "
-        + Math.max(0, Math.min(255, Math.round(this.b) || 0))
-        + (a === 1 ? ")" : ", " + a + ")");
-  }
+  hex: rgb_formatHex, // Deprecated! Use color.formatHex.
+  formatHex: rgb_formatHex,
+  formatRgb: rgb_formatRgb,
+  toString: rgb_formatRgb
 }));
+
+function rgb_formatHex() {
+  return "#" + hex(this.r) + hex(this.g) + hex(this.b);
+}
+
+function rgb_formatRgb() {
+  var a = this.opacity; a = isNaN(a) ? 1 : Math.max(0, Math.min(1, a));
+  return (a === 1 ? "rgb(" : "rgba(")
+      + Math.max(0, Math.min(255, Math.round(this.r) || 0)) + ", "
+      + Math.max(0, Math.min(255, Math.round(this.g) || 0)) + ", "
+      + Math.max(0, Math.min(255, Math.round(this.b) || 0))
+      + (a === 1 ? ")" : ", " + a + ")");
+}
 
 function hex(value) {
   value = Math.max(0, Math.min(255, Math.round(value) || 0));
@@ -4542,6 +4703,14 @@ define(Hsl, hsl, extend(Color, {
     return (0 <= this.s && this.s <= 1 || isNaN(this.s))
         && (0 <= this.l && this.l <= 1)
         && (0 <= this.opacity && this.opacity <= 1);
+  },
+  formatHsl: function() {
+    var a = this.opacity; a = isNaN(a) ? 1 : Math.max(0, Math.min(1, a));
+    return (a === 1 ? "hsl(" : "hsla(")
+        + (this.h || 0) + ", "
+        + (this.s || 0) * 100 + "%, "
+        + (this.l || 0) * 100 + "%"
+        + (a === 1 ? ")" : ", " + a + ")");
   }
 }));
 
@@ -4552,201 +4721,6 @@ function hsl2rgb(h, m1, m2) {
       : h < 240 ? m1 + (m2 - m1) * (240 - h) / 60
       : m1) * 255;
 }
-
-// CONCATENATED MODULE: ./node_modules/d3-color/src/math.js
-var deg2rad = Math.PI / 180;
-var rad2deg = 180 / Math.PI;
-
-// CONCATENATED MODULE: ./node_modules/d3-color/src/lab.js
-
-
-
-
-// https://beta.observablehq.com/@mbostock/lab-and-rgb
-var K = 18,
-    Xn = 0.96422,
-    Yn = 1,
-    Zn = 0.82521,
-    lab_t0 = 4 / 29,
-    lab_t1 = 6 / 29,
-    t2 = 3 * lab_t1 * lab_t1,
-    t3 = lab_t1 * lab_t1 * lab_t1;
-
-function labConvert(o) {
-  if (o instanceof Lab) return new Lab(o.l, o.a, o.b, o.opacity);
-  if (o instanceof Hcl) {
-    if (isNaN(o.h)) return new Lab(o.l, 0, 0, o.opacity);
-    var h = o.h * deg2rad;
-    return new Lab(o.l, Math.cos(h) * o.c, Math.sin(h) * o.c, o.opacity);
-  }
-  if (!(o instanceof Rgb)) o = rgbConvert(o);
-  var r = rgb2lrgb(o.r),
-      g = rgb2lrgb(o.g),
-      b = rgb2lrgb(o.b),
-      y = xyz2lab((0.2225045 * r + 0.7168786 * g + 0.0606169 * b) / Yn), x, z;
-  if (r === g && g === b) x = z = y; else {
-    x = xyz2lab((0.4360747 * r + 0.3850649 * g + 0.1430804 * b) / Xn);
-    z = xyz2lab((0.0139322 * r + 0.0971045 * g + 0.7141733 * b) / Zn);
-  }
-  return new Lab(116 * y - 16, 500 * (x - y), 200 * (y - z), o.opacity);
-}
-
-function gray(l, opacity) {
-  return new Lab(l, 0, 0, opacity == null ? 1 : opacity);
-}
-
-function lab(l, a, b, opacity) {
-  return arguments.length === 1 ? labConvert(l) : new Lab(l, a, b, opacity == null ? 1 : opacity);
-}
-
-function Lab(l, a, b, opacity) {
-  this.l = +l;
-  this.a = +a;
-  this.b = +b;
-  this.opacity = +opacity;
-}
-
-define(Lab, lab, extend(Color, {
-  brighter: function(k) {
-    return new Lab(this.l + K * (k == null ? 1 : k), this.a, this.b, this.opacity);
-  },
-  darker: function(k) {
-    return new Lab(this.l - K * (k == null ? 1 : k), this.a, this.b, this.opacity);
-  },
-  rgb: function() {
-    var y = (this.l + 16) / 116,
-        x = isNaN(this.a) ? y : y + this.a / 500,
-        z = isNaN(this.b) ? y : y - this.b / 200;
-    x = Xn * lab2xyz(x);
-    y = Yn * lab2xyz(y);
-    z = Zn * lab2xyz(z);
-    return new Rgb(
-      lrgb2rgb( 3.1338561 * x - 1.6168667 * y - 0.4906146 * z),
-      lrgb2rgb(-0.9787684 * x + 1.9161415 * y + 0.0334540 * z),
-      lrgb2rgb( 0.0719453 * x - 0.2289914 * y + 1.4052427 * z),
-      this.opacity
-    );
-  }
-}));
-
-function xyz2lab(t) {
-  return t > t3 ? Math.pow(t, 1 / 3) : t / t2 + lab_t0;
-}
-
-function lab2xyz(t) {
-  return t > lab_t1 ? t * t * t : t2 * (t - lab_t0);
-}
-
-function lrgb2rgb(x) {
-  return 255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055);
-}
-
-function rgb2lrgb(x) {
-  return (x /= 255) <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
-}
-
-function hclConvert(o) {
-  if (o instanceof Hcl) return new Hcl(o.h, o.c, o.l, o.opacity);
-  if (!(o instanceof Lab)) o = labConvert(o);
-  if (o.a === 0 && o.b === 0) return new Hcl(NaN, 0, o.l, o.opacity);
-  var h = Math.atan2(o.b, o.a) * rad2deg;
-  return new Hcl(h < 0 ? h + 360 : h, Math.sqrt(o.a * o.a + o.b * o.b), o.l, o.opacity);
-}
-
-function lch(l, c, h, opacity) {
-  return arguments.length === 1 ? hclConvert(l) : new Hcl(h, c, l, opacity == null ? 1 : opacity);
-}
-
-function hcl(h, c, l, opacity) {
-  return arguments.length === 1 ? hclConvert(h) : new Hcl(h, c, l, opacity == null ? 1 : opacity);
-}
-
-function Hcl(h, c, l, opacity) {
-  this.h = +h;
-  this.c = +c;
-  this.l = +l;
-  this.opacity = +opacity;
-}
-
-define(Hcl, hcl, extend(Color, {
-  brighter: function(k) {
-    return new Hcl(this.h, this.c, this.l + K * (k == null ? 1 : k), this.opacity);
-  },
-  darker: function(k) {
-    return new Hcl(this.h, this.c, this.l - K * (k == null ? 1 : k), this.opacity);
-  },
-  rgb: function() {
-    return labConvert(this).rgb();
-  }
-}));
-
-// CONCATENATED MODULE: ./node_modules/d3-color/src/cubehelix.js
-
-
-
-
-var A = -0.14861,
-    B = +1.78277,
-    C = -0.29227,
-    cubehelix_D = -0.90649,
-    E = +1.97294,
-    ED = E * cubehelix_D,
-    EB = E * B,
-    BC_DA = B * C - cubehelix_D * A;
-
-function cubehelixConvert(o) {
-  if (o instanceof Cubehelix) return new Cubehelix(o.h, o.s, o.l, o.opacity);
-  if (!(o instanceof Rgb)) o = rgbConvert(o);
-  var r = o.r / 255,
-      g = o.g / 255,
-      b = o.b / 255,
-      l = (BC_DA * b + ED * r - EB * g) / (BC_DA + ED - EB),
-      bl = b - l,
-      k = (E * (g - l) - C * bl) / cubehelix_D,
-      s = Math.sqrt(k * k + bl * bl) / (E * l * (1 - l)), // NaN if l=0 or l=1
-      h = s ? Math.atan2(k, bl) * rad2deg - 120 : NaN;
-  return new Cubehelix(h < 0 ? h + 360 : h, s, l, o.opacity);
-}
-
-function cubehelix_cubehelix(h, s, l, opacity) {
-  return arguments.length === 1 ? cubehelixConvert(h) : new Cubehelix(h, s, l, opacity == null ? 1 : opacity);
-}
-
-function Cubehelix(h, s, l, opacity) {
-  this.h = +h;
-  this.s = +s;
-  this.l = +l;
-  this.opacity = +opacity;
-}
-
-define(Cubehelix, cubehelix_cubehelix, extend(Color, {
-  brighter: function(k) {
-    k = k == null ? brighter : Math.pow(brighter, k);
-    return new Cubehelix(this.h, this.s, this.l * k, this.opacity);
-  },
-  darker: function(k) {
-    k = k == null ? darker : Math.pow(darker, k);
-    return new Cubehelix(this.h, this.s, this.l * k, this.opacity);
-  },
-  rgb: function() {
-    var h = isNaN(this.h) ? 0 : (this.h + 120) * deg2rad,
-        l = +this.l,
-        a = isNaN(this.s) ? 0 : this.s * l * (1 - l),
-        cosh = Math.cos(h),
-        sinh = Math.sin(h);
-    return new Rgb(
-      255 * (l + a * (A * cosh + B * sinh)),
-      255 * (l + a * (C * cosh + cubehelix_D * sinh)),
-      255 * (l + a * (E * cosh)),
-      this.opacity
-    );
-  }
-}));
-
-// CONCATENATED MODULE: ./node_modules/d3-color/index.js
-
-
-
 
 // CONCATENATED MODULE: ./node_modules/d3-interpolate/src/basis.js
 function basis(t1, v0, v1, v2, v3) {
@@ -4879,10 +4853,31 @@ function rgbSpline(spline) {
 var rgbBasis = rgbSpline(src_basis);
 var rgbBasisClosed = rgbSpline(basisClosed);
 
+// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/numberArray.js
+/* harmony default export */ var numberArray = (function(a, b) {
+  if (!b) b = [];
+  var n = a ? Math.min(b.length, a.length) : 0,
+      c = b.slice(),
+      i;
+  return function(t) {
+    for (i = 0; i < n; ++i) c[i] = a[i] * (1 - t) + b[i] * t;
+    return c;
+  };
+});
+
+function isNumberArray(x) {
+  return ArrayBuffer.isView(x) && !(x instanceof DataView);
+}
+
 // CONCATENATED MODULE: ./node_modules/d3-interpolate/src/array.js
 
 
+
 /* harmony default export */ var src_array = (function(a, b) {
+  return (isNumberArray(b) ? numberArray : genericArray)(a, b);
+});
+
+function genericArray(a, b) {
   var nb = b ? b.length : 0,
       na = a ? Math.min(nb, a.length) : 0,
       x = new Array(na),
@@ -4896,20 +4891,13 @@ var rgbBasisClosed = rgbSpline(basisClosed);
     for (i = 0; i < na; ++i) c[i] = x[i](t);
     return c;
   };
-});
+}
 
 // CONCATENATED MODULE: ./node_modules/d3-interpolate/src/date.js
 /* harmony default export */ var src_date = (function(a, b) {
   var d = new Date;
-  return a = +a, b -= a, function(t) {
-    return d.setTime(a + b * t), d;
-  };
-});
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/number.js
-/* harmony default export */ var src_number = (function(a, b) {
-  return a = +a, b -= a, function(t) {
-    return a + b * t;
+  return a = +a, b = +b, function(t) {
+    return d.setTime(a * (1 - t) + b * t), d;
   };
 });
 
@@ -5014,6 +5002,7 @@ function one(b) {
 
 
 
+
 /* harmony default export */ var src_value = (function(a, b) {
   var t = typeof b, c;
   return b == null || t === "boolean" ? src_constant(b)
@@ -5021,335 +5010,18 @@ function one(b) {
       : t === "string" ? ((c = color_color(b)) ? (b = c, src_rgb) : src_string)
       : b instanceof color_color ? src_rgb
       : b instanceof Date ? src_date
-      : Array.isArray(b) ? src_array
+      : isNumberArray(b) ? numberArray
+      : Array.isArray(b) ? genericArray
       : typeof b.valueOf !== "function" && typeof b.toString !== "function" || isNaN(b) ? object
       : src_number)(a, b);
 });
 
 // CONCATENATED MODULE: ./node_modules/d3-interpolate/src/round.js
 /* harmony default export */ var src_round = (function(a, b) {
-  return a = +a, b -= a, function(t) {
-    return Math.round(a + b * t);
+  return a = +a, b = +b, function(t) {
+    return Math.round(a * (1 - t) + b * t);
   };
 });
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/transform/decompose.js
-var degrees = 180 / Math.PI;
-
-var decompose_identity = {
-  translateX: 0,
-  translateY: 0,
-  rotate: 0,
-  skewX: 0,
-  scaleX: 1,
-  scaleY: 1
-};
-
-/* harmony default export */ var decompose = (function(a, b, c, d, e, f) {
-  var scaleX, scaleY, skewX;
-  if (scaleX = Math.sqrt(a * a + b * b)) a /= scaleX, b /= scaleX;
-  if (skewX = a * c + b * d) c -= a * skewX, d -= b * skewX;
-  if (scaleY = Math.sqrt(c * c + d * d)) c /= scaleY, d /= scaleY, skewX /= scaleY;
-  if (a * d < b * c) a = -a, b = -b, skewX = -skewX, scaleX = -scaleX;
-  return {
-    translateX: e,
-    translateY: f,
-    rotate: Math.atan2(b, a) * degrees,
-    skewX: Math.atan(skewX) * degrees,
-    scaleX: scaleX,
-    scaleY: scaleY
-  };
-});
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/transform/parse.js
-
-
-var cssNode,
-    cssRoot,
-    cssView,
-    svgNode;
-
-function parseCss(value) {
-  if (value === "none") return decompose_identity;
-  if (!cssNode) cssNode = document.createElement("DIV"), cssRoot = document.documentElement, cssView = document.defaultView;
-  cssNode.style.transform = value;
-  value = cssView.getComputedStyle(cssRoot.appendChild(cssNode), null).getPropertyValue("transform");
-  cssRoot.removeChild(cssNode);
-  value = value.slice(7, -1).split(",");
-  return decompose(+value[0], +value[1], +value[2], +value[3], +value[4], +value[5]);
-}
-
-function parseSvg(value) {
-  if (value == null) return decompose_identity;
-  if (!svgNode) svgNode = document.createElementNS("http://www.w3.org/2000/svg", "g");
-  svgNode.setAttribute("transform", value);
-  if (!(value = svgNode.transform.baseVal.consolidate())) return decompose_identity;
-  value = value.matrix;
-  return decompose(value.a, value.b, value.c, value.d, value.e, value.f);
-}
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/transform/index.js
-
-
-
-function interpolateTransform(parse, pxComma, pxParen, degParen) {
-
-  function pop(s) {
-    return s.length ? s.pop() + " " : "";
-  }
-
-  function translate(xa, ya, xb, yb, s, q) {
-    if (xa !== xb || ya !== yb) {
-      var i = s.push("translate(", null, pxComma, null, pxParen);
-      q.push({i: i - 4, x: src_number(xa, xb)}, {i: i - 2, x: src_number(ya, yb)});
-    } else if (xb || yb) {
-      s.push("translate(" + xb + pxComma + yb + pxParen);
-    }
-  }
-
-  function rotate(a, b, s, q) {
-    if (a !== b) {
-      if (a - b > 180) b += 360; else if (b - a > 180) a += 360; // shortest path
-      q.push({i: s.push(pop(s) + "rotate(", null, degParen) - 2, x: src_number(a, b)});
-    } else if (b) {
-      s.push(pop(s) + "rotate(" + b + degParen);
-    }
-  }
-
-  function skewX(a, b, s, q) {
-    if (a !== b) {
-      q.push({i: s.push(pop(s) + "skewX(", null, degParen) - 2, x: src_number(a, b)});
-    } else if (b) {
-      s.push(pop(s) + "skewX(" + b + degParen);
-    }
-  }
-
-  function scale(xa, ya, xb, yb, s, q) {
-    if (xa !== xb || ya !== yb) {
-      var i = s.push(pop(s) + "scale(", null, ",", null, ")");
-      q.push({i: i - 4, x: src_number(xa, xb)}, {i: i - 2, x: src_number(ya, yb)});
-    } else if (xb !== 1 || yb !== 1) {
-      s.push(pop(s) + "scale(" + xb + "," + yb + ")");
-    }
-  }
-
-  return function(a, b) {
-    var s = [], // string constants and placeholders
-        q = []; // number interpolators
-    a = parse(a), b = parse(b);
-    translate(a.translateX, a.translateY, b.translateX, b.translateY, s, q);
-    rotate(a.rotate, b.rotate, s, q);
-    skewX(a.skewX, b.skewX, s, q);
-    scale(a.scaleX, a.scaleY, b.scaleX, b.scaleY, s, q);
-    a = b = null; // gc
-    return function(t) {
-      var i = -1, n = q.length, o;
-      while (++i < n) s[(o = q[i]).i] = o.x(t);
-      return s.join("");
-    };
-  };
-}
-
-var interpolateTransformCss = interpolateTransform(parseCss, "px, ", "px)", "deg)");
-var interpolateTransformSvg = interpolateTransform(parseSvg, ", ", ")", ")");
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/zoom.js
-var rho = Math.SQRT2,
-    rho2 = 2,
-    rho4 = 4,
-    epsilon2 = 1e-12;
-
-function zoom_cosh(x) {
-  return ((x = Math.exp(x)) + 1 / x) / 2;
-}
-
-function zoom_sinh(x) {
-  return ((x = Math.exp(x)) - 1 / x) / 2;
-}
-
-function tanh(x) {
-  return ((x = Math.exp(2 * x)) - 1) / (x + 1);
-}
-
-// p0 = [ux0, uy0, w0]
-// p1 = [ux1, uy1, w1]
-/* harmony default export */ var zoom = (function(p0, p1) {
-  var ux0 = p0[0], uy0 = p0[1], w0 = p0[2],
-      ux1 = p1[0], uy1 = p1[1], w1 = p1[2],
-      dx = ux1 - ux0,
-      dy = uy1 - uy0,
-      d2 = dx * dx + dy * dy,
-      i,
-      S;
-
-  // Special case for u0 ≅ u1.
-  if (d2 < epsilon2) {
-    S = Math.log(w1 / w0) / rho;
-    i = function(t) {
-      return [
-        ux0 + t * dx,
-        uy0 + t * dy,
-        w0 * Math.exp(rho * t * S)
-      ];
-    }
-  }
-
-  // General case.
-  else {
-    var d1 = Math.sqrt(d2),
-        b0 = (w1 * w1 - w0 * w0 + rho4 * d2) / (2 * w0 * rho2 * d1),
-        b1 = (w1 * w1 - w0 * w0 - rho4 * d2) / (2 * w1 * rho2 * d1),
-        r0 = Math.log(Math.sqrt(b0 * b0 + 1) - b0),
-        r1 = Math.log(Math.sqrt(b1 * b1 + 1) - b1);
-    S = (r1 - r0) / rho;
-    i = function(t) {
-      var s = t * S,
-          coshr0 = zoom_cosh(r0),
-          u = w0 / (rho2 * d1) * (coshr0 * tanh(rho * s + r0) - zoom_sinh(r0));
-      return [
-        ux0 + u * dx,
-        uy0 + u * dy,
-        w0 * coshr0 / zoom_cosh(rho * s + r0)
-      ];
-    }
-  }
-
-  i.duration = S * 1000;
-
-  return i;
-});
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/hsl.js
-
-
-
-function hsl_hsl(hue) {
-  return function(start, end) {
-    var h = hue((start = hsl(start)).h, (end = hsl(end)).h),
-        s = nogamma(start.s, end.s),
-        l = nogamma(start.l, end.l),
-        opacity = nogamma(start.opacity, end.opacity);
-    return function(t) {
-      start.h = h(t);
-      start.s = s(t);
-      start.l = l(t);
-      start.opacity = opacity(t);
-      return start + "";
-    };
-  }
-}
-
-/* harmony default export */ var src_hsl = (hsl_hsl(color_hue));
-var hslLong = hsl_hsl(nogamma);
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/lab.js
-
-
-
-function lab_lab(start, end) {
-  var l = nogamma((start = lab(start)).l, (end = lab(end)).l),
-      a = nogamma(start.a, end.a),
-      b = nogamma(start.b, end.b),
-      opacity = nogamma(start.opacity, end.opacity);
-  return function(t) {
-    start.l = l(t);
-    start.a = a(t);
-    start.b = b(t);
-    start.opacity = opacity(t);
-    return start + "";
-  };
-}
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/hcl.js
-
-
-
-function hcl_hcl(hue) {
-  return function(start, end) {
-    var h = hue((start = hcl(start)).h, (end = hcl(end)).h),
-        c = nogamma(start.c, end.c),
-        l = nogamma(start.l, end.l),
-        opacity = nogamma(start.opacity, end.opacity);
-    return function(t) {
-      start.h = h(t);
-      start.c = c(t);
-      start.l = l(t);
-      start.opacity = opacity(t);
-      return start + "";
-    };
-  }
-}
-
-/* harmony default export */ var src_hcl = (hcl_hcl(color_hue));
-var hclLong = hcl_hcl(nogamma);
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/cubehelix.js
-
-
-
-function src_cubehelix_cubehelix(hue) {
-  return (function cubehelixGamma(y) {
-    y = +y;
-
-    function cubehelix(start, end) {
-      var h = hue((start = cubehelix_cubehelix(start)).h, (end = cubehelix_cubehelix(end)).h),
-          s = nogamma(start.s, end.s),
-          l = nogamma(start.l, end.l),
-          opacity = nogamma(start.opacity, end.opacity);
-      return function(t) {
-        start.h = h(t);
-        start.s = s(t);
-        start.l = l(Math.pow(t, y));
-        start.opacity = opacity(t);
-        return start + "";
-      };
-    }
-
-    cubehelix.gamma = cubehelixGamma;
-
-    return cubehelix;
-  })(1);
-}
-
-/* harmony default export */ var src_cubehelix = (src_cubehelix_cubehelix(color_hue));
-var cubehelixLong = src_cubehelix_cubehelix(nogamma);
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/piecewise.js
-function piecewise_piecewise(interpolate, values) {
-  var i = 0, n = values.length - 1, v = values[0], I = new Array(n < 0 ? 0 : n);
-  while (i < n) I[i] = interpolate(v, v = values[++i]);
-  return function(t) {
-    var i = Math.max(0, Math.min(n - 1, Math.floor(t *= n)));
-    return I[i](t - i);
-  };
-}
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/quantize.js
-/* harmony default export */ var quantize = (function(interpolator, n) {
-  var samples = new Array(n);
-  for (var i = 0; i < n; ++i) samples[i] = interpolator(i / (n - 1));
-  return samples;
-});
-
-// CONCATENATED MODULE: ./node_modules/d3-interpolate/index.js
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // CONCATENATED MODULE: ./node_modules/d3-scale/src/constant.js
 /* harmony default export */ var d3_scale_src_constant = (function(x) {
@@ -5478,6 +5150,55 @@ function continuous(deinterpolate, reinterpolate) {
   return rescale();
 }
 
+// CONCATENATED MODULE: ./node_modules/d3-format/src/formatSpecifier.js
+// [[fill]align][sign][symbol][0][width][,][.precision][~][type]
+var re = /^(?:(.)?([<>=^]))?([+\-( ])?([$#])?(0)?(\d+)?(,)?(\.\d+)?(~)?([a-z%])?$/i;
+
+function formatSpecifier(specifier) {
+  if (!(match = re.exec(specifier))) throw new Error("invalid format: " + specifier);
+  var match;
+  return new FormatSpecifier({
+    fill: match[1],
+    align: match[2],
+    sign: match[3],
+    symbol: match[4],
+    zero: match[5],
+    width: match[6],
+    comma: match[7],
+    precision: match[8] && match[8].slice(1),
+    trim: match[9],
+    type: match[10]
+  });
+}
+
+formatSpecifier.prototype = FormatSpecifier.prototype; // instanceof
+
+function FormatSpecifier(specifier) {
+  this.fill = specifier.fill === undefined ? " " : specifier.fill + "";
+  this.align = specifier.align === undefined ? ">" : specifier.align + "";
+  this.sign = specifier.sign === undefined ? "-" : specifier.sign + "";
+  this.symbol = specifier.symbol === undefined ? "" : specifier.symbol + "";
+  this.zero = !!specifier.zero;
+  this.width = specifier.width === undefined ? undefined : +specifier.width;
+  this.comma = !!specifier.comma;
+  this.precision = specifier.precision === undefined ? undefined : +specifier.precision;
+  this.trim = !!specifier.trim;
+  this.type = specifier.type === undefined ? "" : specifier.type + "";
+}
+
+FormatSpecifier.prototype.toString = function() {
+  return this.fill
+      + this.align
+      + this.sign
+      + this.symbol
+      + (this.zero ? "0" : "")
+      + (this.width === undefined ? "" : Math.max(1, this.width | 0))
+      + (this.comma ? "," : "")
+      + (this.precision === undefined ? "" : "." + Math.max(0, this.precision | 0))
+      + (this.trim ? "~" : "")
+      + this.type;
+};
+
 // CONCATENATED MODULE: ./node_modules/d3-format/src/formatDecimal.js
 // Computes the decimal coefficient and exponent of the specified number x with
 // significant digits p, where x is positive and p is in [1, 21] or undefined.
@@ -5499,6 +5220,13 @@ function continuous(deinterpolate, reinterpolate) {
 
 /* harmony default export */ var src_exponent = (function(x) {
   return x = formatDecimal(Math.abs(x)), x ? x[1] : NaN;
+});
+
+// CONCATENATED MODULE: ./node_modules/d3-format/src/precisionPrefix.js
+
+
+/* harmony default export */ var precisionPrefix = (function(step, value) {
+  return Math.max(0, Math.max(-8, Math.min(8, Math.floor(src_exponent(value) / 3))) * 3 - src_exponent(Math.abs(step)));
 });
 
 // CONCATENATED MODULE: ./node_modules/d3-format/src/formatGroup.js
@@ -5530,44 +5258,6 @@ function continuous(deinterpolate, reinterpolate) {
   };
 });
 
-// CONCATENATED MODULE: ./node_modules/d3-format/src/formatSpecifier.js
-// [[fill]align][sign][symbol][0][width][,][.precision][~][type]
-var re = /^(?:(.)?([<>=^]))?([+\-\( ])?([$#])?(0)?(\d+)?(,)?(\.\d+)?(~)?([a-z%])?$/i;
-
-function formatSpecifier(specifier) {
-  return new FormatSpecifier(specifier);
-}
-
-formatSpecifier.prototype = FormatSpecifier.prototype; // instanceof
-
-function FormatSpecifier(specifier) {
-  if (!(match = re.exec(specifier))) throw new Error("invalid format: " + specifier);
-  var match;
-  this.fill = match[1] || " ";
-  this.align = match[2] || ">";
-  this.sign = match[3] || "-";
-  this.symbol = match[4] || "";
-  this.zero = !!match[5];
-  this.width = match[6] && +match[6];
-  this.comma = !!match[7];
-  this.precision = match[8] && +match[8].slice(1);
-  this.trim = !!match[9];
-  this.type = match[10] || "";
-}
-
-FormatSpecifier.prototype.toString = function() {
-  return this.fill
-      + this.align
-      + this.sign
-      + this.symbol
-      + (this.zero ? "0" : "")
-      + (this.width == null ? "" : Math.max(1, this.width | 0))
-      + (this.comma ? "," : "")
-      + (this.precision == null ? "" : "." + Math.max(0, this.precision | 0))
-      + (this.trim ? "~" : "")
-      + this.type;
-};
-
 // CONCATENATED MODULE: ./node_modules/d3-format/src/formatTrim.js
 // Trims insignificant zeros, e.g., replaces 1.2000k with 1.2k.
 /* harmony default export */ var formatTrim = (function(s) {
@@ -5575,7 +5265,7 @@ FormatSpecifier.prototype.toString = function() {
     switch (s[i]) {
       case ".": i0 = i1 = i; break;
       case "0": if (i0 === 0) i0 = i; i1 = i; break;
-      default: if (i0 > 0) { if (!+s[i]) break out; i0 = 0; } break;
+      default: if (!+s[i]) break out; if (i0 > 0) i0 = 0; break;
     }
   }
   return i0 > 0 ? s.slice(0, i0) + s.slice(i1 + 1) : s;
@@ -5647,14 +5337,18 @@ var prefixExponent;
 
 
 
-var prefixes = ["y","z","a","f","p","n","µ","m","","k","M","G","T","P","E","Z","Y"];
+var locale_map = Array.prototype.map,
+    prefixes = ["y","z","a","f","p","n","µ","m","","k","M","G","T","P","E","Z","Y"];
 
 /* harmony default export */ var src_locale = (function(locale) {
-  var group = locale.grouping && locale.thousands ? formatGroup(locale.grouping, locale.thousands) : src_identity,
-      currency = locale.currency,
-      decimal = locale.decimal,
-      numerals = locale.numerals ? formatNumerals(locale.numerals) : src_identity,
-      percent = locale.percent || "%";
+  var group = locale.grouping === undefined || locale.thousands === undefined ? src_identity : formatGroup(locale_map.call(locale.grouping, Number), locale.thousands + ""),
+      currencyPrefix = locale.currency === undefined ? "" : locale.currency[0] + "",
+      currencySuffix = locale.currency === undefined ? "" : locale.currency[1] + "",
+      decimal = locale.decimal === undefined ? "." : locale.decimal + "",
+      numerals = locale.numerals === undefined ? src_identity : formatNumerals(locale_map.call(locale.numerals, String)),
+      percent = locale.percent === undefined ? "%" : locale.percent + "",
+      minus = locale.minus === undefined ? "-" : locale.minus + "",
+      nan = locale.nan === undefined ? "NaN" : locale.nan + "";
 
   function newFormat(specifier) {
     specifier = formatSpecifier(specifier);
@@ -5674,15 +5368,15 @@ var prefixes = ["y","z","a","f","p","n","µ","m","","k","M","G","T","P","E","Z",
     if (type === "n") comma = true, type = "g";
 
     // The "" type, and any invalid type, is an alias for ".12~g".
-    else if (!formatTypes[type]) precision == null && (precision = 12), trim = true, type = "g";
+    else if (!formatTypes[type]) precision === undefined && (precision = 12), trim = true, type = "g";
 
     // If zero fill is specified, padding goes after sign and before digits.
     if (zero || (fill === "0" && align === "=")) zero = true, fill = "0", align = "=";
 
     // Compute the prefix and suffix.
     // For SI-prefix, the suffix is lazily computed.
-    var prefix = symbol === "$" ? currency[0] : symbol === "#" && /[boxX]/.test(type) ? "0" + type.toLowerCase() : "",
-        suffix = symbol === "$" ? currency[1] : /[%p]/.test(type) ? percent : "";
+    var prefix = symbol === "$" ? currencyPrefix : symbol === "#" && /[boxX]/.test(type) ? "0" + type.toLowerCase() : "",
+        suffix = symbol === "$" ? currencySuffix : /[%p]/.test(type) ? percent : "";
 
     // What format function should we use?
     // Is this an integer type?
@@ -5694,7 +5388,7 @@ var prefixes = ["y","z","a","f","p","n","µ","m","","k","M","G","T","P","E","Z",
     // or clamp the specified precision to the supported range.
     // For significant precision, it must be in [1, 21].
     // For fixed precision, it must be in [0, 20].
-    precision = precision == null ? 6
+    precision = precision === undefined ? 6
         : /[gprs]/.test(type) ? Math.max(1, Math.min(21, precision))
         : Math.max(0, Math.min(20, precision));
 
@@ -5709,18 +5403,20 @@ var prefixes = ["y","z","a","f","p","n","µ","m","","k","M","G","T","P","E","Z",
       } else {
         value = +value;
 
+        // Determine the sign. -0 is not less than 0, but 1 / -0 is!
+        var valueNegative = value < 0 || 1 / value < 0;
+
         // Perform the initial formatting.
-        var valueNegative = value < 0;
-        value = formatType(Math.abs(value), precision);
+        value = isNaN(value) ? nan : formatType(Math.abs(value), precision);
 
         // Trim insignificant zeros.
         if (trim) value = formatTrim(value);
 
-        // If a negative value rounds to zero during formatting, treat as positive.
-        if (valueNegative && +value === 0) valueNegative = false;
+        // If a negative value rounds to zero after formatting, and no explicit positive sign is requested, hide the sign.
+        if (valueNegative && +value === 0 && sign !== "+") valueNegative = false;
 
         // Compute the prefix and suffix.
-        valuePrefix = (valueNegative ? (sign === "(" ? sign : "-") : sign === "-" || sign === "(" ? "" : sign) + valuePrefix;
+        valuePrefix = (valueNegative ? (sign === "(" ? sign : minus) : sign === "-" || sign === "(" ? "" : sign) + valuePrefix;
         valueSuffix = (type === "s" ? prefixes[8 + prefixExponent / 3] : "") + valueSuffix + (valueNegative && sign === "(" ? ")" : "");
 
         // Break the formatted value into the integer “value” part that can be
@@ -5792,7 +5488,8 @@ defaultLocale({
   decimal: ".",
   thousands: ",",
   grouping: [3],
-  currency: ["$", ""]
+  currency: ["$", ""],
+  minus: "-"
 });
 
 function defaultLocale(definition) {
@@ -5802,20 +5499,6 @@ function defaultLocale(definition) {
   return defaultLocale_locale;
 }
 
-// CONCATENATED MODULE: ./node_modules/d3-format/src/precisionFixed.js
-
-
-/* harmony default export */ var precisionFixed = (function(step) {
-  return Math.max(0, -src_exponent(Math.abs(step)));
-});
-
-// CONCATENATED MODULE: ./node_modules/d3-format/src/precisionPrefix.js
-
-
-/* harmony default export */ var precisionPrefix = (function(step, value) {
-  return Math.max(0, Math.max(-8, Math.min(8, Math.floor(src_exponent(value) / 3))) * 3 - src_exponent(Math.abs(step)));
-});
-
 // CONCATENATED MODULE: ./node_modules/d3-format/src/precisionRound.js
 
 
@@ -5824,13 +5507,12 @@ function defaultLocale(definition) {
   return Math.max(0, src_exponent(max) - src_exponent(step)) + 1;
 });
 
-// CONCATENATED MODULE: ./node_modules/d3-format/index.js
+// CONCATENATED MODULE: ./node_modules/d3-format/src/precisionFixed.js
 
 
-
-
-
-
+/* harmony default export */ var precisionFixed = (function(step) {
+  return Math.max(0, -src_exponent(Math.abs(step)));
+});
 
 // CONCATENATED MODULE: ./node_modules/d3-scale/src/tickFormat.js
 
@@ -6209,7 +5891,7 @@ function quantile_quantile() {
 
 
 
-function quantize_quantize() {
+function quantize() {
   var x0 = 0,
       x1 = 1,
       n = 1,
@@ -6244,7 +5926,7 @@ function quantize_quantize() {
   };
 
   scale.copy = function() {
-    return quantize_quantize()
+    return quantize()
         .domain([x0, x1])
         .range(range);
   };
@@ -6294,10 +5976,12 @@ var interval_t0 = new Date,
 function newInterval(floori, offseti, count, field) {
 
   function interval(date) {
-    return floori(date = new Date(+date)), date;
+    return floori(date = arguments.length === 0 ? new Date : new Date(+date)), date;
   }
 
-  interval.floor = interval;
+  interval.floor = function(date) {
+    return floori(date = new Date(+date)), date;
+  };
 
   interval.ceil = function(date) {
     return floori(date = new Date(date - 1)), offseti(date, 1), floori(date), date;
@@ -6357,33 +6041,50 @@ function newInterval(floori, offseti, count, field) {
   return interval;
 }
 
-// CONCATENATED MODULE: ./node_modules/d3-time/src/millisecond.js
+// CONCATENATED MODULE: ./node_modules/d3-time/src/year.js
 
 
-var millisecond_millisecond = newInterval(function() {
-  // noop
+var year_year = newInterval(function(date) {
+  date.setMonth(0, 1);
+  date.setHours(0, 0, 0, 0);
 }, function(date, step) {
-  date.setTime(+date + step);
+  date.setFullYear(date.getFullYear() + step);
 }, function(start, end) {
-  return end - start;
+  return end.getFullYear() - start.getFullYear();
+}, function(date) {
+  return date.getFullYear();
 });
 
 // An optimized implementation for this simple case.
-millisecond_millisecond.every = function(k) {
-  k = Math.floor(k);
-  if (!isFinite(k) || !(k > 0)) return null;
-  if (!(k > 1)) return millisecond_millisecond;
-  return newInterval(function(date) {
-    date.setTime(Math.floor(date / k) * k);
+year_year.every = function(k) {
+  return !isFinite(k = Math.floor(k)) || !(k > 0) ? null : newInterval(function(date) {
+    date.setFullYear(Math.floor(date.getFullYear() / k) * k);
+    date.setMonth(0, 1);
+    date.setHours(0, 0, 0, 0);
   }, function(date, step) {
-    date.setTime(+date + step * k);
-  }, function(start, end) {
-    return (end - start) / k;
+    date.setFullYear(date.getFullYear() + step * k);
   });
 };
 
-/* harmony default export */ var src_millisecond = (millisecond_millisecond);
-var milliseconds = millisecond_millisecond.range;
+/* harmony default export */ var src_year = (year_year);
+var years = year_year.range;
+
+// CONCATENATED MODULE: ./node_modules/d3-time/src/month.js
+
+
+var month_month = newInterval(function(date) {
+  date.setDate(1);
+  date.setHours(0, 0, 0, 0);
+}, function(date, step) {
+  date.setMonth(date.getMonth() + step);
+}, function(start, end) {
+  return end.getMonth() - start.getMonth() + (end.getFullYear() - start.getFullYear()) * 12;
+}, function(date) {
+  return date.getMonth();
+});
+
+/* harmony default export */ var src_month = (month_month);
+var months = month_month.range;
 
 // CONCATENATED MODULE: ./node_modules/d3-time/src/duration.js
 var durationSecond = 1e3;
@@ -6391,76 +6092,6 @@ var durationMinute = 6e4;
 var durationHour = 36e5;
 var durationDay = 864e5;
 var durationWeek = 6048e5;
-
-// CONCATENATED MODULE: ./node_modules/d3-time/src/second.js
-
-
-
-var second_second = newInterval(function(date) {
-  date.setTime(Math.floor(date / durationSecond) * durationSecond);
-}, function(date, step) {
-  date.setTime(+date + step * durationSecond);
-}, function(start, end) {
-  return (end - start) / durationSecond;
-}, function(date) {
-  return date.getUTCSeconds();
-});
-
-/* harmony default export */ var src_second = (second_second);
-var seconds = second_second.range;
-
-// CONCATENATED MODULE: ./node_modules/d3-time/src/minute.js
-
-
-
-var minute_minute = newInterval(function(date) {
-  date.setTime(Math.floor(date / durationMinute) * durationMinute);
-}, function(date, step) {
-  date.setTime(+date + step * durationMinute);
-}, function(start, end) {
-  return (end - start) / durationMinute;
-}, function(date) {
-  return date.getMinutes();
-});
-
-/* harmony default export */ var src_minute = (minute_minute);
-var minutes = minute_minute.range;
-
-// CONCATENATED MODULE: ./node_modules/d3-time/src/hour.js
-
-
-
-var hour_hour = newInterval(function(date) {
-  var offset = date.getTimezoneOffset() * durationMinute % durationHour;
-  if (offset < 0) offset += durationHour;
-  date.setTime(Math.floor((+date - offset) / durationHour) * durationHour + offset);
-}, function(date, step) {
-  date.setTime(+date + step * durationHour);
-}, function(start, end) {
-  return (end - start) / durationHour;
-}, function(date) {
-  return date.getHours();
-});
-
-/* harmony default export */ var src_hour = (hour_hour);
-var hours = hour_hour.range;
-
-// CONCATENATED MODULE: ./node_modules/d3-time/src/day.js
-
-
-
-var day_day = newInterval(function(date) {
-  date.setHours(0, 0, 0, 0);
-}, function(date, step) {
-  date.setDate(date.getDate() + step);
-}, function(start, end) {
-  return (end - start - (end.getTimezoneOffset() - start.getTimezoneOffset()) * durationMinute) / durationDay;
-}, function(date) {
-  return date.getDate() - 1;
-});
-
-/* harmony default export */ var src_day = (day_day);
-var days = day_day.range;
 
 // CONCATENATED MODULE: ./node_modules/d3-time/src/week.js
 
@@ -6493,101 +6124,101 @@ var thursdays = thursday.range;
 var fridays = friday.range;
 var saturdays = saturday.range;
 
-// CONCATENATED MODULE: ./node_modules/d3-time/src/month.js
+// CONCATENATED MODULE: ./node_modules/d3-time/src/day.js
 
 
-var month_month = newInterval(function(date) {
-  date.setDate(1);
+
+var day_day = newInterval(function(date) {
   date.setHours(0, 0, 0, 0);
 }, function(date, step) {
-  date.setMonth(date.getMonth() + step);
+  date.setDate(date.getDate() + step);
 }, function(start, end) {
-  return end.getMonth() - start.getMonth() + (end.getFullYear() - start.getFullYear()) * 12;
+  return (end - start - (end.getTimezoneOffset() - start.getTimezoneOffset()) * durationMinute) / durationDay;
 }, function(date) {
-  return date.getMonth();
+  return date.getDate() - 1;
 });
 
-/* harmony default export */ var src_month = (month_month);
-var months = month_month.range;
+/* harmony default export */ var src_day = (day_day);
+var days = day_day.range;
 
-// CONCATENATED MODULE: ./node_modules/d3-time/src/year.js
-
-
-var year_year = newInterval(function(date) {
-  date.setMonth(0, 1);
-  date.setHours(0, 0, 0, 0);
-}, function(date, step) {
-  date.setFullYear(date.getFullYear() + step);
-}, function(start, end) {
-  return end.getFullYear() - start.getFullYear();
-}, function(date) {
-  return date.getFullYear();
-});
-
-// An optimized implementation for this simple case.
-year_year.every = function(k) {
-  return !isFinite(k = Math.floor(k)) || !(k > 0) ? null : newInterval(function(date) {
-    date.setFullYear(Math.floor(date.getFullYear() / k) * k);
-    date.setMonth(0, 1);
-    date.setHours(0, 0, 0, 0);
-  }, function(date, step) {
-    date.setFullYear(date.getFullYear() + step * k);
-  });
-};
-
-/* harmony default export */ var src_year = (year_year);
-var years = year_year.range;
-
-// CONCATENATED MODULE: ./node_modules/d3-time/src/utcMinute.js
+// CONCATENATED MODULE: ./node_modules/d3-time/src/hour.js
 
 
 
-var utcMinute = newInterval(function(date) {
-  date.setUTCSeconds(0, 0);
-}, function(date, step) {
-  date.setTime(+date + step * durationMinute);
-}, function(start, end) {
-  return (end - start) / durationMinute;
-}, function(date) {
-  return date.getUTCMinutes();
-});
-
-/* harmony default export */ var src_utcMinute = (utcMinute);
-var utcMinutes = utcMinute.range;
-
-// CONCATENATED MODULE: ./node_modules/d3-time/src/utcHour.js
-
-
-
-var utcHour = newInterval(function(date) {
-  date.setUTCMinutes(0, 0, 0);
+var hour_hour = newInterval(function(date) {
+  date.setTime(date - date.getMilliseconds() - date.getSeconds() * durationSecond - date.getMinutes() * durationMinute);
 }, function(date, step) {
   date.setTime(+date + step * durationHour);
 }, function(start, end) {
   return (end - start) / durationHour;
 }, function(date) {
-  return date.getUTCHours();
+  return date.getHours();
 });
 
-/* harmony default export */ var src_utcHour = (utcHour);
-var utcHours = utcHour.range;
+/* harmony default export */ var src_hour = (hour_hour);
+var hours = hour_hour.range;
 
-// CONCATENATED MODULE: ./node_modules/d3-time/src/utcDay.js
+// CONCATENATED MODULE: ./node_modules/d3-time/src/minute.js
 
 
 
-var utcDay = newInterval(function(date) {
-  date.setUTCHours(0, 0, 0, 0);
+var minute_minute = newInterval(function(date) {
+  date.setTime(date - date.getMilliseconds() - date.getSeconds() * durationSecond);
 }, function(date, step) {
-  date.setUTCDate(date.getUTCDate() + step);
+  date.setTime(+date + step * durationMinute);
 }, function(start, end) {
-  return (end - start) / durationDay;
+  return (end - start) / durationMinute;
 }, function(date) {
-  return date.getUTCDate() - 1;
+  return date.getMinutes();
 });
 
-/* harmony default export */ var src_utcDay = (utcDay);
-var utcDays = utcDay.range;
+/* harmony default export */ var src_minute = (minute_minute);
+var minutes = minute_minute.range;
+
+// CONCATENATED MODULE: ./node_modules/d3-time/src/second.js
+
+
+
+var second_second = newInterval(function(date) {
+  date.setTime(date - date.getMilliseconds());
+}, function(date, step) {
+  date.setTime(+date + step * durationSecond);
+}, function(start, end) {
+  return (end - start) / durationSecond;
+}, function(date) {
+  return date.getUTCSeconds();
+});
+
+/* harmony default export */ var src_second = (second_second);
+var seconds = second_second.range;
+
+// CONCATENATED MODULE: ./node_modules/d3-time/src/millisecond.js
+
+
+var millisecond_millisecond = newInterval(function() {
+  // noop
+}, function(date, step) {
+  date.setTime(+date + step);
+}, function(start, end) {
+  return end - start;
+});
+
+// An optimized implementation for this simple case.
+millisecond_millisecond.every = function(k) {
+  k = Math.floor(k);
+  if (!isFinite(k) || !(k > 0)) return null;
+  if (!(k > 1)) return millisecond_millisecond;
+  return newInterval(function(date) {
+    date.setTime(Math.floor(date / k) * k);
+  }, function(date, step) {
+    date.setTime(+date + step * k);
+  }, function(start, end) {
+    return (end - start) / k;
+  });
+};
+
+/* harmony default export */ var src_millisecond = (millisecond_millisecond);
+var milliseconds = millisecond_millisecond.range;
 
 // CONCATENATED MODULE: ./node_modules/d3-time/src/utcWeek.js
 
@@ -6620,22 +6251,22 @@ var utcThursdays = utcThursday.range;
 var utcFridays = utcFriday.range;
 var utcSaturdays = utcSaturday.range;
 
-// CONCATENATED MODULE: ./node_modules/d3-time/src/utcMonth.js
+// CONCATENATED MODULE: ./node_modules/d3-time/src/utcDay.js
 
 
-var utcMonth = newInterval(function(date) {
-  date.setUTCDate(1);
+
+var utcDay = newInterval(function(date) {
   date.setUTCHours(0, 0, 0, 0);
 }, function(date, step) {
-  date.setUTCMonth(date.getUTCMonth() + step);
+  date.setUTCDate(date.getUTCDate() + step);
 }, function(start, end) {
-  return end.getUTCMonth() - start.getUTCMonth() + (end.getUTCFullYear() - start.getUTCFullYear()) * 12;
+  return (end - start) / durationDay;
 }, function(date) {
-  return date.getUTCMonth();
+  return date.getUTCDate() - 1;
 });
 
-/* harmony default export */ var src_utcMonth = (utcMonth);
-var utcMonths = utcMonth.range;
+/* harmony default export */ var src_utcDay = (utcDay);
+var utcDays = utcDay.range;
 
 // CONCATENATED MODULE: ./node_modules/d3-time/src/utcYear.js
 
@@ -6665,37 +6296,6 @@ utcYear.every = function(k) {
 /* harmony default export */ var src_utcYear = (utcYear);
 var utcYears = utcYear.range;
 
-// CONCATENATED MODULE: ./node_modules/d3-time/index.js
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // CONCATENATED MODULE: ./node_modules/d3-time-format/src/locale.js
 
 
@@ -6717,8 +6317,8 @@ function utcDate(d) {
   return new Date(Date.UTC(d.y, d.m, d.d, d.H, d.M, d.S, d.L));
 }
 
-function newYear(y) {
-  return {y: y, m: 0, d: 1, H: 0, M: 0, S: 0, L: 0};
+function newDate(y, m, d) {
+  return {y: y, m: m, d: d, H: 0, M: 0, S: 0, L: 0};
 }
 
 function formatLocale(locale) {
@@ -6758,6 +6358,7 @@ function formatLocale(locale) {
     "m": formatMonthNumber,
     "M": formatMinutes,
     "p": formatPeriod,
+    "q": formatQuarter,
     "Q": formatUnixTimestamp,
     "s": formatUnixTimestampSeconds,
     "S": formatSeconds,
@@ -6790,6 +6391,7 @@ function formatLocale(locale) {
     "m": formatUTCMonthNumber,
     "M": formatUTCMinutes,
     "p": formatUTCPeriod,
+    "q": formatUTCQuarter,
     "Q": formatUnixTimestamp,
     "s": formatUnixTimestampSeconds,
     "S": formatUTCSeconds,
@@ -6822,6 +6424,7 @@ function formatLocale(locale) {
     "m": parseMonthNumber,
     "M": parseMinutes,
     "p": parsePeriod,
+    "q": parseQuarter,
     "Q": parseUnixTimestamp,
     "s": parseUnixTimestampSeconds,
     "S": parseSeconds,
@@ -6874,32 +6477,39 @@ function formatLocale(locale) {
     };
   }
 
-  function newParse(specifier, newDate) {
+  function newParse(specifier, Z) {
     return function(string) {
-      var d = newYear(1900),
+      var d = newDate(1900, undefined, 1),
           i = parseSpecifier(d, specifier, string += "", 0),
           week, day;
       if (i != string.length) return null;
 
       // If a UNIX timestamp is specified, return it.
       if ("Q" in d) return new Date(d.Q);
+      if ("s" in d) return new Date(d.s * 1000 + ("L" in d ? d.L : 0));
+
+      // If this is utcParse, never use the local timezone.
+      if (Z && !("Z" in d)) d.Z = 0;
 
       // The am-pm flag is 0 for AM, and 1 for PM.
       if ("p" in d) d.H = d.H % 12 + d.p * 12;
+
+      // If the month was not specified, inherit from the quarter.
+      if (d.m === undefined) d.m = "q" in d ? d.q : 0;
 
       // Convert day-of-week and week-of-year to day-of-year.
       if ("V" in d) {
         if (d.V < 1 || d.V > 53) return null;
         if (!("w" in d)) d.w = 1;
         if ("Z" in d) {
-          week = utcDate(newYear(d.y)), day = week.getUTCDay();
+          week = utcDate(newDate(d.y, 0, 1)), day = week.getUTCDay();
           week = day > 4 || day === 0 ? utcMonday.ceil(week) : utcMonday(week);
           week = src_utcDay.offset(week, (d.V - 1) * 7);
           d.y = week.getUTCFullYear();
           d.m = week.getUTCMonth();
           d.d = week.getUTCDate() + (d.w + 6) % 7;
         } else {
-          week = newDate(newYear(d.y)), day = week.getDay();
+          week = localDate(newDate(d.y, 0, 1)), day = week.getDay();
           week = day > 4 || day === 0 ? monday.ceil(week) : monday(week);
           week = src_day.offset(week, (d.V - 1) * 7);
           d.y = week.getFullYear();
@@ -6908,7 +6518,7 @@ function formatLocale(locale) {
         }
       } else if ("W" in d || "U" in d) {
         if (!("w" in d)) d.w = "u" in d ? d.u % 7 : "W" in d ? 1 : 0;
-        day = "Z" in d ? utcDate(newYear(d.y)).getUTCDay() : newDate(newYear(d.y)).getDay();
+        day = "Z" in d ? utcDate(newDate(d.y, 0, 1)).getUTCDay() : localDate(newDate(d.y, 0, 1)).getDay();
         d.m = 0;
         d.d = "W" in d ? (d.w + 6) % 7 + d.W * 7 - (day + 5) % 7 : d.w + d.U * 7 - (day + 6) % 7;
       }
@@ -6922,7 +6532,7 @@ function formatLocale(locale) {
       }
 
       // Otherwise, all fields are in local time.
-      return newDate(d);
+      return localDate(d);
     };
   }
 
@@ -7005,6 +6615,10 @@ function formatLocale(locale) {
     return locale_periods[+(d.getHours() >= 12)];
   }
 
+  function formatQuarter(d) {
+    return 1 + ~~(d.getMonth() / 3);
+  }
+
   function formatUTCShortWeekday(d) {
     return locale_shortWeekdays[d.getUTCDay()];
   }
@@ -7025,6 +6639,10 @@ function formatLocale(locale) {
     return locale_periods[+(d.getUTCHours() >= 12)];
   }
 
+  function formatUTCQuarter(d) {
+    return 1 + ~~(d.getUTCMonth() / 3);
+  }
+
   return {
     format: function(specifier) {
       var f = newFormat(specifier += "", formats);
@@ -7032,7 +6650,7 @@ function formatLocale(locale) {
       return f;
     },
     parse: function(specifier) {
-      var p = newParse(specifier += "", localDate);
+      var p = newParse(specifier += "", false);
       p.toString = function() { return specifier; };
       return p;
     },
@@ -7042,7 +6660,7 @@ function formatLocale(locale) {
       return f;
     },
     utcParse: function(specifier) {
-      var p = newParse(specifier, utcDate);
+      var p = newParse(specifier += "", true);
       p.toString = function() { return specifier; };
       return p;
     }
@@ -7115,6 +6733,11 @@ function parseZone(d, string, i) {
   return n ? (d.Z = n[1] ? 0 : -(n[2] + (n[3] || "00")), i + n[0].length) : -1;
 }
 
+function parseQuarter(d, string, i) {
+  var n = numberRe.exec(string.slice(i, i + 1));
+  return n ? (d.q = n[0] * 3 - 3, i + n[0].length) : -1;
+}
+
 function parseMonthNumber(d, string, i) {
   var n = numberRe.exec(string.slice(i, i + 2));
   return n ? (d.m = n[0] - 1, i + n[0].length) : -1;
@@ -7167,7 +6790,7 @@ function parseUnixTimestamp(d, string, i) {
 
 function parseUnixTimestampSeconds(d, string, i) {
   var n = numberRe.exec(string.slice(i));
-  return n ? (d.Q = (+n[0]) * 1000, i + n[0].length) : -1;
+  return n ? (d.s = +n[0], i + n[0].length) : -1;
 }
 
 function formatDayOfMonth(d, p) {
@@ -7212,7 +6835,7 @@ function formatWeekdayNumberMonday(d) {
 }
 
 function formatWeekNumberSunday(d, p) {
-  return pad(sunday.count(src_year(d), d), p, 2);
+  return pad(sunday.count(src_year(d) - 1, d), p, 2);
 }
 
 function formatWeekNumberISO(d, p) {
@@ -7226,7 +6849,7 @@ function formatWeekdayNumberSunday(d) {
 }
 
 function formatWeekNumberMonday(d, p) {
-  return pad(monday.count(src_year(d), d), p, 2);
+  return pad(monday.count(src_year(d) - 1, d), p, 2);
 }
 
 function locale_formatYear(d, p) {
@@ -7286,7 +6909,7 @@ function formatUTCWeekdayNumberMonday(d) {
 }
 
 function formatUTCWeekNumberSunday(d, p) {
-  return pad(utcSunday.count(src_utcYear(d), d), p, 2);
+  return pad(utcSunday.count(src_utcYear(d) - 1, d), p, 2);
 }
 
 function formatUTCWeekNumberISO(d, p) {
@@ -7300,7 +6923,7 @@ function formatUTCWeekdayNumberSunday(d) {
 }
 
 function formatUTCWeekNumberMonday(d, p) {
-  return pad(utcMonday.count(src_utcYear(d), d), p, 2);
+  return pad(utcMonday.count(src_utcYear(d) - 1, d), p, 2);
 }
 
 function formatUTCYear(d, p) {
@@ -7355,42 +6978,6 @@ function defaultLocale_defaultLocale(definition) {
   utcParse = src_defaultLocale_locale.utcParse;
   return src_defaultLocale_locale;
 }
-
-// CONCATENATED MODULE: ./node_modules/d3-time-format/src/isoFormat.js
-
-
-var isoSpecifier = "%Y-%m-%dT%H:%M:%S.%LZ";
-
-function formatIsoNative(date) {
-  return date.toISOString();
-}
-
-var formatIso = Date.prototype.toISOString
-    ? formatIsoNative
-    : utcFormat(isoSpecifier);
-
-/* harmony default export */ var isoFormat = (formatIso);
-
-// CONCATENATED MODULE: ./node_modules/d3-time-format/src/isoParse.js
-
-
-
-function parseIsoNative(string) {
-  var date = new Date(string);
-  return isNaN(date) ? null : date;
-}
-
-var parseIso = +new Date("2000-01-01T00:00:00.000Z")
-    ? parseIsoNative
-    : utcParse(isoSpecifier);
-
-/* harmony default export */ var isoParse = (parseIso);
-
-// CONCATENATED MODULE: ./node_modules/d3-time-format/index.js
-
-
-
-
 
 // CONCATENATED MODULE: ./node_modules/d3-scale/src/time.js
 
@@ -7529,6 +7116,57 @@ function calendar(year, month, week, day, hour, minute, second, millisecond, for
   return calendar(src_year, src_month, sunday, src_day, src_hour, src_minute, src_second, src_millisecond, timeFormat).domain([new Date(2000, 0, 1), new Date(2000, 0, 2)]);
 });
 
+// CONCATENATED MODULE: ./node_modules/d3-time/src/utcMonth.js
+
+
+var utcMonth = newInterval(function(date) {
+  date.setUTCDate(1);
+  date.setUTCHours(0, 0, 0, 0);
+}, function(date, step) {
+  date.setUTCMonth(date.getUTCMonth() + step);
+}, function(start, end) {
+  return end.getUTCMonth() - start.getUTCMonth() + (end.getUTCFullYear() - start.getUTCFullYear()) * 12;
+}, function(date) {
+  return date.getUTCMonth();
+});
+
+/* harmony default export */ var src_utcMonth = (utcMonth);
+var utcMonths = utcMonth.range;
+
+// CONCATENATED MODULE: ./node_modules/d3-time/src/utcHour.js
+
+
+
+var utcHour = newInterval(function(date) {
+  date.setUTCMinutes(0, 0, 0);
+}, function(date, step) {
+  date.setTime(+date + step * durationHour);
+}, function(start, end) {
+  return (end - start) / durationHour;
+}, function(date) {
+  return date.getUTCHours();
+});
+
+/* harmony default export */ var src_utcHour = (utcHour);
+var utcHours = utcHour.range;
+
+// CONCATENATED MODULE: ./node_modules/d3-time/src/utcMinute.js
+
+
+
+var utcMinute = newInterval(function(date) {
+  date.setUTCSeconds(0, 0);
+}, function(date, step) {
+  date.setTime(+date + step * durationMinute);
+}, function(start, end) {
+  return (end - start) / durationMinute;
+}, function(date) {
+  return date.getUTCMinutes();
+});
+
+/* harmony default export */ var src_utcMinute = (utcMinute);
+var utcMinutes = utcMinute.range;
+
 // CONCATENATED MODULE: ./node_modules/d3-scale/src/utcTime.js
 
 
@@ -7564,6 +7202,104 @@ function calendar(year, month, week, day, hour, minute, second, millisecond, for
 
 
 /* harmony default export */ var category20 = (src_colors("1f77b4aec7e8ff7f0effbb782ca02c98df8ad62728ff98969467bdc5b0d58c564bc49c94e377c2f7b6d27f7f7fc7c7c7bcbd22dbdb8d17becf9edae5"));
+
+// CONCATENATED MODULE: ./node_modules/d3-color/src/math.js
+var deg2rad = Math.PI / 180;
+var rad2deg = 180 / Math.PI;
+
+// CONCATENATED MODULE: ./node_modules/d3-color/src/cubehelix.js
+
+
+
+
+var A = -0.14861,
+    B = +1.78277,
+    C = -0.29227,
+    cubehelix_D = -0.90649,
+    E = +1.97294,
+    ED = E * cubehelix_D,
+    EB = E * B,
+    BC_DA = B * C - cubehelix_D * A;
+
+function cubehelixConvert(o) {
+  if (o instanceof Cubehelix) return new Cubehelix(o.h, o.s, o.l, o.opacity);
+  if (!(o instanceof Rgb)) o = rgbConvert(o);
+  var r = o.r / 255,
+      g = o.g / 255,
+      b = o.b / 255,
+      l = (BC_DA * b + ED * r - EB * g) / (BC_DA + ED - EB),
+      bl = b - l,
+      k = (E * (g - l) - C * bl) / cubehelix_D,
+      s = Math.sqrt(k * k + bl * bl) / (E * l * (1 - l)), // NaN if l=0 or l=1
+      h = s ? Math.atan2(k, bl) * rad2deg - 120 : NaN;
+  return new Cubehelix(h < 0 ? h + 360 : h, s, l, o.opacity);
+}
+
+function cubehelix_cubehelix(h, s, l, opacity) {
+  return arguments.length === 1 ? cubehelixConvert(h) : new Cubehelix(h, s, l, opacity == null ? 1 : opacity);
+}
+
+function Cubehelix(h, s, l, opacity) {
+  this.h = +h;
+  this.s = +s;
+  this.l = +l;
+  this.opacity = +opacity;
+}
+
+define(Cubehelix, cubehelix_cubehelix, extend(Color, {
+  brighter: function(k) {
+    k = k == null ? brighter : Math.pow(brighter, k);
+    return new Cubehelix(this.h, this.s, this.l * k, this.opacity);
+  },
+  darker: function(k) {
+    k = k == null ? darker : Math.pow(darker, k);
+    return new Cubehelix(this.h, this.s, this.l * k, this.opacity);
+  },
+  rgb: function() {
+    var h = isNaN(this.h) ? 0 : (this.h + 120) * deg2rad,
+        l = +this.l,
+        a = isNaN(this.s) ? 0 : this.s * l * (1 - l),
+        cosh = Math.cos(h),
+        sinh = Math.sin(h);
+    return new Rgb(
+      255 * (l + a * (A * cosh + B * sinh)),
+      255 * (l + a * (C * cosh + cubehelix_D * sinh)),
+      255 * (l + a * (E * cosh)),
+      this.opacity
+    );
+  }
+}));
+
+// CONCATENATED MODULE: ./node_modules/d3-interpolate/src/cubehelix.js
+
+
+
+function src_cubehelix_cubehelix(hue) {
+  return (function cubehelixGamma(y) {
+    y = +y;
+
+    function cubehelix(start, end) {
+      var h = hue((start = cubehelix_cubehelix(start)).h, (end = cubehelix_cubehelix(end)).h),
+          s = nogamma(start.s, end.s),
+          l = nogamma(start.l, end.l),
+          opacity = nogamma(start.opacity, end.opacity);
+      return function(t) {
+        start.h = h(t);
+        start.s = s(t);
+        start.l = l(Math.pow(t, y));
+        start.opacity = opacity(t);
+        return start + "";
+      };
+    }
+
+    cubehelix.gamma = cubehelixGamma;
+
+    return cubehelix;
+  })(1);
+}
+
+/* harmony default export */ var src_cubehelix = (src_cubehelix_cubehelix(color_hue));
+var cubehelixLong = src_cubehelix_cubehelix(nogamma);
 
 // CONCATENATED MODULE: ./node_modules/d3-scale/src/cubehelix.js
 
@@ -7734,7 +7470,7 @@ Path.prototype = path.prototype = {
     }
 
     // Or, is (x1,y1) coincident with (x0,y0)? Do nothing.
-    else if (!(l01_2 > epsilon)) {}
+    else if (!(l01_2 > epsilon));
 
     // Or, are (x0,y0), (x1,y1) and (x2,y2) collinear?
     // Equivalently, is (x1,y1) coincident with (x2,y2)?
@@ -7764,7 +7500,7 @@ Path.prototype = path.prototype = {
     }
   },
   arc: function(x, y, r, a0, a1, ccw) {
-    x = +x, y = +y, r = +r;
+    x = +x, y = +y, r = +r, ccw = !!ccw;
     var dx = r * Math.cos(a0),
         dy = r * Math.sin(a0),
         x0 = x + dx,
@@ -7810,9 +7546,6 @@ Path.prototype = path.prototype = {
 };
 
 /* harmony default export */ var src_path = (path);
-
-// CONCATENATED MODULE: ./node_modules/d3-path/index.js
-
 
 // CONCATENATED MODULE: ./node_modules/d3-shape/src/constant.js
 /* harmony default export */ var d3_shape_src_constant = (function(x) {
@@ -7871,7 +7604,9 @@ function arcPadAngle(d) {
 function intersect(x0, y0, x1, y1, x2, y2, x3, y3) {
   var x10 = x1 - x0, y10 = y1 - y0,
       x32 = x3 - x2, y32 = y3 - y2,
-      t = (x32 * (y0 - y2) - y32 * (x0 - x2)) / (y32 * x10 - x32 * y10);
+      t = y32 * x10 - x32 * y10;
+  if (t * t < math_epsilon) return;
+  t = (x32 * (y0 - y2) - y32 * (x0 - x2)) / t;
   return [x0 + t * x10, y0 + t * y10];
 }
 
@@ -7992,12 +7727,12 @@ function cornerTangents(x0, y0, x1, y1, r1, rc, cw) {
         var x11 = r1 * cos(a11),
             y11 = r1 * sin(a11),
             x00 = r0 * cos(a00),
-            y00 = r0 * sin(a00);
+            y00 = r0 * sin(a00),
+            oc;
 
         // Restrict the corner radius according to the sector angle.
-        if (da < math_pi) {
-          var oc = da0 > math_epsilon ? intersect(x01, y01, x00, y00, x11, y11, x10, y10) : [x10, y10],
-              ax = x01 - oc[0],
+        if (da < math_pi && (oc = intersect(x01, y01, x00, y00, x11, y11, x10, y10))) {
+          var ax = x01 - oc[0],
               ay = y01 - oc[1],
               bx = x11 - oc[0],
               by = y11 - oc[1],
@@ -9722,15 +9457,15 @@ function stackValue(d, key) {
 
 // CONCATENATED MODULE: ./node_modules/d3-shape/src/offset/diverging.js
 /* harmony default export */ var diverging = (function(series, order) {
-  if (!((n = series.length) > 1)) return;
+  if (!((n = series.length) > 0)) return;
   for (var i, j = 0, d, dy, yp, yn, n, m = series[order[0]].length; j < m; ++j) {
     for (yp = yn = 0, i = 0; i < n; ++i) {
-      if ((dy = (d = series[order[i]][j])[1] - d[0]) >= 0) {
+      if ((dy = (d = series[order[i]][j])[1] - d[0]) > 0) {
         d[0] = yp, d[1] = yp += dy;
       } else if (dy < 0) {
         d[1] = yn, d[0] = yn += dy;
       } else {
-        d[0] = yp;
+        d[0] = 0, d[1] = dy;
       }
     }
   }
@@ -9774,6 +9509,20 @@ function stackValue(d, key) {
   none(series, order);
 });
 
+// CONCATENATED MODULE: ./node_modules/d3-shape/src/order/appearance.js
+
+
+/* harmony default export */ var appearance = (function(series) {
+  var peaks = series.map(peak);
+  return order_none(series).sort(function(a, b) { return peaks[a] - peaks[b]; });
+});
+
+function peak(series) {
+  var i = -1, j = 0, n = series.length, vi, vj = -Infinity;
+  while (++i < n) if ((vi = +series[i][1]) > vj) vj = vi, j = i;
+  return j;
+}
+
 // CONCATENATED MODULE: ./node_modules/d3-shape/src/order/ascending.js
 
 
@@ -9804,7 +9553,7 @@ function ascending_sum(series) {
       i,
       j,
       sums = series.map(ascending_sum),
-      order = order_none(series).sort(function(a, b) { return sums[b] - sums[a]; }),
+      order = appearance(series),
       top = 0,
       bottom = 0,
       tops = [],
@@ -9831,13 +9580,14 @@ function ascending_sum(series) {
   return order_none(series).reverse();
 });
 
-// CONCATENATED MODULE: ./node_modules/d3-shape/index.js
+// CONCATENATED MODULE: ./node_modules/d3-shape/src/index.js
 
 
 
 
  // Note: radialArea is deprecated!
  // Note: radialLine is deprecated!
+
 
 
 
@@ -10006,7 +9756,7 @@ function ascending_sum(series) {
 
 
 
-var d3 = Object.assign({}, d3_array_namespaceObject, d3_scale_namespaceObject, d3_shape_namespaceObject);
+var d3 = Object.assign({}, src_namespaceObject, d3_scale_namespaceObject, d3_shape_src_namespaceObject);
 /* harmony default export */ var vue_d3_barchartvue_type_script_lang_js_ = ({
   name: 'D3-bar-chart',
   props: {
@@ -10183,14 +9933,15 @@ var d3 = Object.assign({}, d3_array_namespaceObject, d3_scale_namespaceObject, d
     },
     dummyBars: function dummyBars() {
       var isLinear = this.isLinear,
-          bars = this.bars;
+          bars = this.bars,
+          ww = this.ww;
       bars = _toConsumableArray(bars);
+      var w = ww / bars.length;
       if (!isLinear) return bars;
       return bars.map(function (b, i) {
         b = Object.assign({}, b);
-        var px = i > 0 ? bars[i - 1].x : 0;
-        var nx = i < bars.length - 1 ? bars[i + 1].x : b.x;
-        b.w = nx - px;
+        b.w = w;
+        b.x = b.x - w / 2;
         return b;
       });
     },
@@ -10565,7 +10316,12 @@ function normalizeComponent (
     options._ssrRegister = hook
   } else if (injectStyles) {
     hook = shadowMode
-      ? function () { injectStyles.call(this, this.$root.$options.shadowRoot) }
+      ? function () {
+        injectStyles.call(
+          this,
+          (options.functional ? this.parent : this).$root.$options.shadowRoot
+        )
+      }
       : injectStyles
   }
 
@@ -10574,7 +10330,7 @@ function normalizeComponent (
       // for template-only hot-reload because in that case the render fn doesn't
       // go through the normalizer
       options._injectStyles = hook
-      // register for functioal component in vue file
+      // register for functional component in vue file
       var originalRender = options.render
       options.render = function renderWithStyleInjection (h, context) {
         hook.call(context)
@@ -10621,6 +10377,63 @@ var component = normalizeComponent(
 
 /* harmony default export */ var entry_lib = __webpack_exports__["default"] = (vue_d3_barchart);
 
+
+
+/***/ }),
+
+/***/ "fb6a":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var $ = __webpack_require__("23e7");
+var isObject = __webpack_require__("861d");
+var isArray = __webpack_require__("e8b5");
+var toAbsoluteIndex = __webpack_require__("23cb");
+var toLength = __webpack_require__("50c4");
+var toIndexedObject = __webpack_require__("fc6a");
+var createProperty = __webpack_require__("8418");
+var wellKnownSymbol = __webpack_require__("b622");
+var arrayMethodHasSpeciesSupport = __webpack_require__("1dde");
+var arrayMethodUsesToLength = __webpack_require__("ae40");
+
+var HAS_SPECIES_SUPPORT = arrayMethodHasSpeciesSupport('slice');
+var USES_TO_LENGTH = arrayMethodUsesToLength('slice', { ACCESSORS: true, 0: 0, 1: 2 });
+
+var SPECIES = wellKnownSymbol('species');
+var nativeSlice = [].slice;
+var max = Math.max;
+
+// `Array.prototype.slice` method
+// https://tc39.github.io/ecma262/#sec-array.prototype.slice
+// fallback for not array-like ES3 strings and DOM objects
+$({ target: 'Array', proto: true, forced: !HAS_SPECIES_SUPPORT || !USES_TO_LENGTH }, {
+  slice: function slice(start, end) {
+    var O = toIndexedObject(this);
+    var length = toLength(O.length);
+    var k = toAbsoluteIndex(start, length);
+    var fin = toAbsoluteIndex(end === undefined ? length : end, length);
+    // inline `ArraySpeciesCreate` for usage native `Array#slice` where it's possible
+    var Constructor, result, n;
+    if (isArray(O)) {
+      Constructor = O.constructor;
+      // cross-realm fallback
+      if (typeof Constructor == 'function' && (Constructor === Array || isArray(Constructor.prototype))) {
+        Constructor = undefined;
+      } else if (isObject(Constructor)) {
+        Constructor = Constructor[SPECIES];
+        if (Constructor === null) Constructor = undefined;
+      }
+      if (Constructor === Array || Constructor === undefined) {
+        return nativeSlice.call(O, k, fin);
+      }
+    }
+    result = new (Constructor === undefined ? Array : Constructor)(max(fin - k, 0));
+    for (n = 0; k < fin; k++, n++) if (k in O) createProperty(result, n, O[k]);
+    result.length = n;
+    return result;
+  }
+});
 
 
 /***/ }),
@@ -10701,7 +10514,7 @@ module.exports = NATIVE_SYMBOL
   // eslint-disable-next-line no-undef
   && !Symbol.sham
   // eslint-disable-next-line no-undef
-  && typeof Symbol() == 'symbol';
+  && typeof Symbol.iterator == 'symbol';
 
 
 /***/ })
