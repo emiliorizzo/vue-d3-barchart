@@ -6,8 +6,8 @@
   "scripts": {
     "build": "npm run lint && npm run clean && npm run build-component && npm run clean-dist",
     "lint": "npx vue-cli-service lint",
-    "clean": "rm -rf ./dist",
     "build-component": "npx vue-cli-service build --target lib src/vue-d3-barchart.vue",
+    "clean": "rm -rf ./dist",
     "clean-dist": "rm dist/demo.html",
     "dev": "npx vue-cli-service serve",
     "example": "npx vue-cli-service build --dest example"
@@ -19,20 +19,24 @@
     "d3-shape": "^1.2.0"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^4.1.1",
-    "@vue/cli-plugin-eslint": "^4.1.1",
-    "@vue/cli-service": "^4.1.1",
-    "@vue/eslint-config-standard": "^3.0.5",
-    "eslint-plugin-vue": "^5.0.0",
-    "eslint": "^4.19.1",
-    "babel-eslint": "^10.0.3",
+    "@vue/cli-plugin-babel": "~4.3.1",
+    "@vue/cli-plugin-eslint": "~4.3.1",
+    "@vue/cli-service": "~4.3.1",
+    "@vue/eslint-config-standard": "^5.1.2",
+    "babel-eslint": "^10.1.0",
+    "core-js": "^3.6.0",
+    "eslint": "^6.7.2",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.0",
+    "eslint-plugin-vue": "^6.2.2",
     "pug": "^2.0.3",
     "pug-plain-loader": "^1.0.0",
     "raw-loader": "^0.5.1",
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.2",
     "vue": "^2.5.16",
-    "core-js": "^3.6.0",
     "vue-template-compiler": "^2.5.16"
   },
   "bugs": {
