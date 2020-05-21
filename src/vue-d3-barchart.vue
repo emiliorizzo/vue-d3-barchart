@@ -136,25 +136,25 @@ export default {
       return (this.getX) ? d3.min(this.xValues) : 0
     },
     isLinear () {
-      let { bars, marks } = this.opts
+      const { bars, marks } = this.opts
       return !bars && !marks
     },
     scaleLinearX () {
-      let { xMax, w, xMin } = this
+      const { xMax, w, xMin } = this
       return d3.scaleLinear()
         .domain([xMin, xMax])
         .range([0, w])
     },
     scaleBarsX () {
-      let { xMax, ww, xMin } = this
-      let { padding } = this.opts
+      const { xMax, ww, xMin } = this
+      const { padding } = this.opts
       return d3.scaleBand()
         .domain(d3.range(xMin, xMax))
         .paddingInner(padding)
         .rangeRound([0, ww])
     },
     scaleX () {
-      let { scaleLinearX, scaleBarsX, isLinear } = this
+      const { scaleLinearX, scaleBarsX, isLinear } = this
       return (isLinear) ? scaleLinearX : scaleBarsX
     },
     scaleY () {
@@ -173,13 +173,13 @@ export default {
         .range([0, 100])
     },
     renderGradient () {
-      let curve = this.opts.curve
-      let bars = this.opts.bars
-      let curveBack = this.opts.curveBack
+      const curve = this.opts.curve
+      const bars = this.opts.bars
+      const curveBack = this.opts.curveBack
       return (bars && bars.gradient) || (curve && curve.gradient) || (curveBack && curveBack.gradient)
     },
     colors () {
-      let colorCb = this.opts.colorCb
+      const colorCb = this.opts.colorCb
       if (colorCb && typeof colorCb === 'function') return colorCb
       let colors = (d) => { return 'red' }
       // color with interpolator
@@ -189,7 +189,7 @@ export default {
           .interpolator(this.colorInterpol)
         // color with max, min
       } else if (this.opts.colors) {
-        let uColors = this.opts.colors
+        const uColors = this.opts.colors
 
         let range
         let domain = [this.max, this.min]
@@ -209,18 +209,18 @@ export default {
     axisY () {
       let ticks = this.opts.axisTicks
       ticks = (ticks <= this.max) ? ticks : this.max
-      let axis = []
+      const axis = []
 
-      let scaleV = d3.scaleLinear()
+      const scaleV = d3.scaleLinear()
         .domain([0, ticks])
         .rangeRound([this.min, this.max])
 
-      let scaleY = d3.scaleLinear()
+      const scaleY = d3.scaleLinear()
         .domain([0, ticks])
         .rangeRound([this.hh, 0])
 
       for (let i = 0; i <= ticks; i++) {
-        let v = scaleV(i)
+        const v = scaleV(i)
         axis.push({
           v: v,
           value: this.formatY(v),
@@ -230,9 +230,9 @@ export default {
       return axis
     },
     bars () {
-      let { scaleX, scaleY, percentX, percentY, colors, barW } = this
+      const { scaleX, scaleY, percentX, percentY, colors, barW } = this
       return this.mappedData.map((m, i) => {
-        let { x, y, d } = m
+        const { x, y, d } = m
         return {
           d,
           xv: x,
@@ -252,8 +252,8 @@ export default {
       if (!isLinear) return bars
       return bars.map((b, i) => {
         b = Object.assign({}, b)
-        let px = (i > 0) ? bars[i - 1].x : 0
-        let nx = (i < bars.length - 1) ? bars[i + 1].x : b.x
+        const px = (i > 0) ? bars[i - 1].x : 0
+        const nx = (i < bars.length - 1) ? bars[i + 1].x : b.x
         b.w = nx - px
         return b
       })
@@ -262,7 +262,7 @@ export default {
       return this.margin
     },
     oX () {
-      let { barW } = this
+      const { barW } = this
       return this.oXa + (barW / 2)
     },
     oY () {
@@ -275,7 +275,7 @@ export default {
       return this.w - this.oY
     },
     barW () {
-      let { bandwidth } = this.scaleX
+      const { bandwidth } = this.scaleX
       return (typeof bandwidth === 'function') ? bandwidth() : 0
     },
     barPad () {
@@ -287,19 +287,19 @@ export default {
       return 5
     },
     min () {
-      let { min } = this.opts.domain
-      let { yValues } = this
+      const { min } = this.opts.domain
+      const { yValues } = this
       return (min === null || min === undefined) ? d3.min(yValues) : min
     },
     max () {
-      let { max } = this.opts.domain
-      let { yValues } = this
+      const { max } = this.opts.domain
+      const { yValues } = this
       return (max === null || max === undefined) ? d3.max(yValues) : max
     },
     mappedData () {
       return this.data.map((d, i) => {
-        let y = this.getY(d)
-        let x = (this.getX) ? this.getX(d) : i
+        const y = this.getY(d)
+        const x = (this.getX) ? this.getX(d) : i
         return { x, y, d }
       })
     },
@@ -316,7 +316,7 @@ export default {
       return this.opts.fontSize
     },
     fontSizeComp () {
-      let maxChars = d3.max(this.data.map((d) => {
+      const maxChars = d3.max(this.data.map((d) => {
         return String(d).length
       }))
       return this.w / (maxChars * this.data.length * 2)
@@ -326,7 +326,7 @@ export default {
       // return this.fontSize * 2
     },
     lineX () {
-      let over = this.over
+      const over = this.over
       if (over) return over.x + this.margin + (over.w / 2)
       return 0
     },
@@ -335,7 +335,7 @@ export default {
     },
     // calculates label with by max line chars (ex)
     labelW () {
-      let maxLen = d3.max(this.label.map((l) => {
+      const maxLen = d3.max(this.label.map((l) => {
         return l.toString().length
       }))
       return (maxLen) ? maxLen + 1 : 0
@@ -343,10 +343,10 @@ export default {
   },
   methods: {
     curve (opts) {
-      let data = this.bars
-      let barw = this.barW
-      let b = barw / 2
-      let curve = d3.line()
+      const data = this.bars
+      const barw = this.barW
+      const b = barw / 2
+      const curve = d3.line()
         .x((d) => {
           return this.barX(d) + b
         })
@@ -362,11 +362,11 @@ export default {
       return d
     },
     closeCurve () {
-      let fp = this.bars[0]
-      let lp = this.bars[this.bars.length - 1]
-      let fpx = this.barX(fp) + fp.w / 2
-      let lpx = this.barX(lp) + lp.w / 2
-      let d = [
+      const fp = this.bars[0]
+      const lp = this.bars[this.bars.length - 1]
+      const fpx = this.barX(fp) + fp.w / 2
+      const lpx = this.barX(lp) + lp.w / 2
+      const d = [
         ' L' + lpx,
         this.hh,
         'L' + fpx,
@@ -376,24 +376,24 @@ export default {
       return d.join(' ')
     },
     createLabel (bar) {
-      let label = this.formatLabel(bar, this.formatX, this.formatY)
+      const label = this.formatLabel(bar, this.formatX, this.formatY)
       return label.map((v, i) => {
-        let style = v.style || {}
-        let css = v.css || []
+        const style = v.style || {}
+        const css = v.css || []
         css.push(`l-${i}`)
-        let txt = v.txt || v
+        const txt = v.txt || v
         return { style, css, txt, i }
       })
     },
     init () {
-      let opts = this.opts
-      let options = this.options
+      const opts = this.opts
+      const options = this.options
 
-      for (let op in options) {
+      for (const op in options) {
         opts[op] = options[op]
       }
-      let props = ['formatLabel', 'formatX', 'formatY']
-      for (let prop of props) {
+      const props = ['formatLabel', 'formatX', 'formatY']
+      for (const prop of props) {
         if (options[prop]) this[prop] = options[prop]
       }
       if (!options.marks) opts.marks = null
@@ -404,20 +404,20 @@ export default {
       this.setFucntion('colorScale')
 
       // Y get / format
-      let getY = options.getY
+      const getY = options.getY
       if (getY && typeof getY === 'function') {
         this.getY = getY
       }
       // X get / format
-      let getX = options.getX
+      const getX = options.getX
       if (getX && typeof getX === 'function') {
         this.getX = getX
       }
       this.gradientId = this.randomName('svgGrad-')
 
       // copy curve settings to curveBack
-      let curve = this.opts.curve
-      let curveBack = this.opts.curveBack
+      const curve = this.opts.curve
+      const curveBack = this.opts.curveBack
       if (curveBack) {
         curveBack.type = curve.type || null
       }
@@ -426,7 +426,7 @@ export default {
       this.curveBackStyle = this.gradientStyle('curveBack')
     },
     setFucntion (name, value) {
-      let f = this.opts[name]
+      const f = this.opts[name]
       if (f) {
         if (typeof f === 'function') {
           this[name] = f
@@ -452,10 +452,10 @@ export default {
     },
     gradientStyle (name) {
       let style = {}
-      let e = this.opts[name]
+      const e = this.opts[name]
       if (e) {
         style = e.style || {}
-        let strokeUrl = 'url(#' + this.gradientId + ')'
+        const strokeUrl = 'url(#' + this.gradientId + ')'
         if (e.gradient) {
           if (e.gradient.stroke) {
             style.stroke = strokeUrl
@@ -474,7 +474,7 @@ export default {
       // return (x > -1) ? x : 0
     },
     barY (d) {
-      let y = this.h - d.y - this.margin / 2
+      const y = this.h - d.y - this.margin / 2
       return y
       // return (y > -1) ? y : 0
     },
@@ -482,7 +482,7 @@ export default {
       return d.x + d.w / 2 - String(d.x).length * this.fontSize / 2 + this.margin
     },
     barStyle (d) {
-      let style = this.gradientStyle('bars')
+      const style = this.gradientStyle('bars')
       if (!style.fill) style.fill = (this.opts.colors) ? d.color : ''
       return style
     },
